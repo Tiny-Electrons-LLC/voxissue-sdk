@@ -1,4 +1,9 @@
 node_modules
-dist
+# NOTE: dist/ is intentionally committed. Consumers pin this repo as a private
+# git dependency (github:Tiny-Electrons-LLC/visual-capture#vX) and install it in
+# CI with only the default same-org token over HTTPS - there is no cross-repo
+# SSH key or `prepare`/build step available there, so the built output must be
+# checked in. Run `npm run build` before tagging a release (see release note in
+# package.json / README).
 *.log
 .DS_Store

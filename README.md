@@ -6,16 +6,20 @@ The **capture engine is swappable**: DOM→PNG today (via `modern-screenshot` �
 
 Used by patchconsole, elevateiq, itfolder.
 
-## Install (git dependency)
+## Install (private git dependency)
 
 ```jsonc
 // package.json
 "dependencies": {
-  "@tiny-electrons/visual-capture": "github:Tiny-Electrons-LLC/visual-capture#v0.1.0"
+  "@tiny-electrons/visual-capture": "github:Tiny-Electrons-LLC/visual-capture#v0.1.2"
 }
 ```
 
-The `prepare` hook builds `dist/` on install.
+Pin a **tag** so `npm ci` resolves over HTTPS with only the default same-org
+token — no cross-repo SSH key and no build step in CI. `dist/` is **committed**
+to this repo for exactly that reason (CI cannot run a `prepare`/build over SSH
+from a private sibling repo). The tradeoff: each release must be built before
+tagging — see [Releasing](#releasing).
 
 ## Architecture
 
@@ -107,6 +111,20 @@ visual-capture-2026-08-30/
 ```
 
 Every PNG has a metadata record (route, checkpoint, viewport, DPR, browser, platform, engine, appVersion, gitCommit, timestamp).
+
+## Releasing
+
+`dist/` is checked in, so a release is build → commit → tag → push:
+
+```bash
+npm run release:build   # test + tsup (regenerates dist/)
+git add -A && git commit -m "release: vX.Y.Z"
+git tag vX.Y.Z && git push && git push --tags
+```
+
+Then bump each consumer's dep to `#vX.Y.Z` and `npm install` to refresh its
+lockfile. **Never** point a consumer at a branch or an un-pushed commit SHA — it
+404s for CI and every other machine.
 
 ## Roadmap
 

@@ -1,6 +1,6 @@
 {
   "name": "@tiny-electrons/visual-capture",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Self-driving in-SPA visual capture + regression runner. Framework-agnostic core with a swappable capture engine and a thin Vue adapter. Runs on the real device (iPhone/iPad/desktop Safari, Chrome) and captures the rendered DOM to PNG.",
   "type": "module",
   "license": "UNLICENSED",

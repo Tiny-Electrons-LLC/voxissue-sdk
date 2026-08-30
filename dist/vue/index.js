@@ -3,7 +3,7 @@ import {
   VisualTestRunner,
   buildSessionZip,
   downloadBlob
-} from "../chunk-FMVTMWCH.js";
+} from "../chunk-ZIEJW6UF.js";
 
 // src/vue/index.ts
 import { ref, shallowRef, readonly, onMounted as onMounted2, onBeforeUnmount } from "vue";

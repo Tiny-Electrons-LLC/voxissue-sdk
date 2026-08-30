@@ -37,16 +37,30 @@ export class DomCaptureEngine implements CaptureEngine {
     const vh = window.innerHeight
     const target = (req.target as HTMLElement) || document.documentElement
 
+    const captureWidth = req.viewportOnly ? vw : target.scrollWidth
+    const captureHeight = req.viewportOnly ? vh : target.scrollHeight
+
     const blob = await domToBlob(target, {
       // Capture the viewport box at real DPR (matches the native screenshot).
-      width: req.viewportOnly ? vw : target.scrollWidth,
-      height: req.viewportOnly ? vh : target.scrollHeight,
+      width: captureWidth,
+      height: captureHeight,
       scale: dpr,
       backgroundColor: this.opts.backgroundColor ?? '#ffffff',
-      // When viewport-only, clip to the current scroll position.
-      style: req.viewportOnly
-        ? { transform: `translate(${-window.scrollX}px, ${-window.scrollY}px)`, transformOrigin: 'top left' }
-        : undefined,
+      // CRITICAL: pin the cloned root to the real layout width. Without this,
+      // modern-screenshot renders <html> into a foreignObject that reflows to a
+      // content-driven (narrower) width, so text wraps differently than on the
+      // real device - the capture came out as if the viewport were much
+      // narrower. Forcing width/min/max to the live viewport makes the clone lay
+      // out identically to the screen. (When viewport-only we also translate to
+      // the current scroll position.)
+      style: {
+        width: `${captureWidth}px`,
+        minWidth: `${captureWidth}px`,
+        maxWidth: `${captureWidth}px`,
+        ...(req.viewportOnly
+          ? { transform: `translate(${-window.scrollX}px, ${-window.scrollY}px)`, transformOrigin: 'top left' }
+          : {}),
+      },
       filter: (node) => {
         // Drop elements marked ignore (they cause churn in diffs).
         if (node instanceof Element && node.hasAttribute(IGNORE_ATTR)) return false
@@ -72,8 +86,8 @@ export class DomCaptureEngine implements CaptureEngine {
 
     return {
       blob,
-      width: Math.round((req.viewportOnly ? vw : target.scrollWidth) * dpr),
-      height: Math.round((req.viewportOnly ? vh : target.scrollHeight) * dpr),
+      width: Math.round(captureWidth * dpr),
+      height: Math.round(captureHeight * dpr),
     }
   }
 }

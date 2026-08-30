@@ -635,6 +635,15 @@ var DomCaptureEngine = class {
         width: `${captureWidth}px`,
         minWidth: `${captureWidth}px`,
         maxWidth: `${captureWidth}px`,
+        // THE FIX for "capture wraps more than the real screen at the same
+        // width": the clone renders inside an SVG image document that has NO
+        // <meta viewport>, so iOS WebKit re-enables text auto-sizing and inflates
+        // px-sized UI text ~20%, forcing extra line-wraps + overlap. On the live
+        // page the computed value is 'auto' (== the default), so modern-screenshot
+        // never carries an opt-out into the clone. Pin it explicitly here; it
+        // inherits to the whole tree. (Both spellings for Safari + spec.)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...{ webkitTextSizeAdjust: "100%", textSizeAdjust: "100%" },
         ...req.viewportOnly ? { transform: `translate(${-window.scrollX}px, ${-window.scrollY}px)`, transformOrigin: "top left" } : {}
       },
       filter: (node) => {
@@ -647,6 +656,13 @@ var DomCaptureEngine = class {
             el.style.filter = "blur(8px)";
             el.setAttribute("aria-hidden", "true");
           });
+          const doc = cloned.ownerDocument;
+          if (doc && cloned instanceof HTMLElement && !doc.getElementById("vc-text-size-fix")) {
+            const s = doc.createElement("style");
+            s.id = "vc-text-size-fix";
+            s.textContent = "*{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;}";
+            cloned.prepend(s);
+          }
         }
         if (cloned.ownerDocument && this.opts.onClone) this.opts.onClone(cloned.ownerDocument);
       }
@@ -731,4 +747,4 @@ export {
   defineSuite,
   defineScenario
 };
-//# sourceMappingURL=chunk-ZIEJW6UF.js.map
+//# sourceMappingURL=chunk-EHEIR3C7.js.map

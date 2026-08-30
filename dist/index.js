@@ -20,7 +20,7 @@ import {
   orientation,
   waitForAssets,
   waitForReady
-} from "./chunk-ZIEJW6UF.js";
+} from "./chunk-EHEIR3C7.js";
 export {
   DomCaptureEngine,
   HttpUploader,

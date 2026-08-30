@@ -1,0 +1,58 @@
+{
+  "name": "@tiny-electrons/visual-capture",
+  "version": "0.1.0",
+  "description": "Self-driving in-SPA visual capture + regression runner. Framework-agnostic core with a swappable capture engine and a thin Vue adapter. Runs on the real device (iPhone/iPad/desktop Safari, Chrome) and captures the rendered DOM to PNG.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": true,
+  "author": "Tiny Electrons LLC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tiny-Electrons-LLC/visual-capture.git"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "import": "./dist/vue/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "modern-screenshot": "^4.6.6",
+    "jszip": "^3.10.1"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0",
+    "vue-router": "^4.0.0 || ^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    },
+    "vue-router": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4",
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
+  }
+}

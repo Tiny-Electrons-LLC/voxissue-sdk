@@ -38,9 +38,28 @@ function tx<T>(db: IDBDatabase, store: string, mode: IDBTransactionMode, fn: (s:
   })
 }
 
-interface CaptureRow extends StoredCapture {
+// On disk we persist the capture bytes as an ArrayBuffer + mime, NOT a Blob.
+// WebKit/iOS Safari (the primary target) fails to structured-clone a Blob into
+// IndexedDB in many contexts ("Error preparing Blob/File data to be stored in
+// object store"), silently dropping every capture. ArrayBuffers clone reliably
+// everywhere, so we convert Blob->ArrayBuffer on write and back on read; the
+// StoredCapture.blob contract callers (zip/upload) see is unchanged.
+interface CaptureRow {
   key: string
   sessionId: string
+  meta: StoredCapture['meta']
+  uploaded: boolean
+  bytes: ArrayBuffer
+  mime: string
+}
+
+async function toRow(sessionId: string, c: StoredCapture): Promise<CaptureRow> {
+  const bytes = await c.blob.arrayBuffer()
+  return { key: `${sessionId}:${c.meta.index}`, sessionId, meta: c.meta, uploaded: c.uploaded, bytes, mime: c.blob.type || 'image/png' }
+}
+
+function fromRow(row: CaptureRow): StoredCapture {
+  return { meta: row.meta, uploaded: row.uploaded, blob: new Blob([row.bytes], { type: row.mime }) }
 }
 
 export class VisualStorage {
@@ -48,7 +67,7 @@ export class VisualStorage {
 
   async saveCapture(sessionId: string, capture: StoredCapture): Promise<void> {
     const db = await this.dbP
-    const row: CaptureRow = { ...capture, key: `${sessionId}:${capture.meta.index}`, sessionId }
+    const row = await toRow(sessionId, capture)
     await tx(db, CAPTURES, 'readwrite', (s) => s.put(row))
   }
 
@@ -62,7 +81,7 @@ export class VisualStorage {
   async listCaptures(sessionId: string): Promise<StoredCapture[]> {
     const db = await this.dbP
     const rows = await tx<CaptureRow[]>(db, CAPTURES, 'readonly', (s) => s.index('bySession').getAll(sessionId))
-    return rows.sort((a, b) => a.meta.index - b.meta.index)
+    return rows.sort((a, b) => a.meta.index - b.meta.index).map(fromRow)
   }
 
   async saveSession(state: VisualSessionState): Promise<void> {

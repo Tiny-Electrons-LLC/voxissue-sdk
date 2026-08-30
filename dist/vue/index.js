@@ -3,7 +3,7 @@ import {
   VisualTestRunner,
   buildSessionZip,
   downloadBlob
-} from "../chunk-URD23OS4.js";
+} from "../chunk-VICGCBJP.js";
 
 // src/vue/index.ts
 import { ref, shallowRef, readonly, onMounted as onMounted2, onBeforeUnmount } from "vue";
@@ -110,11 +110,11 @@ var VisualTestPanel_default = defineComponent({
         controls.push(h("button", { class: "vc-btn", onClick: () => c.start() }, "Run again"));
       }
       children.push(h("div", { class: "vc-row" }, controls));
-      const panel = h("div", { class: "vc-panel" }, children);
+      const panel = h("div", { class: "vc-panel", "data-visual-ignore": "" }, children);
       if (isRunning.value || isPaused.value) {
         return [
           panel,
-          h("div", { class: "vc-overlay" }, [
+          h("div", { class: "vc-overlay", "data-visual-ignore": "" }, [
             h("div", { class: "vc-overlay-card" }, [
               h("span", { class: "vc-dot" }),
               h("span", `Visual Test ${isPaused.value ? "Paused" : "Running"}  ${done.value} / ${total.value}`),

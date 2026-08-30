@@ -241,13 +241,20 @@ function tx(db, store, mode, fn) {
     req.onerror = () => reject(req.error);
   });
 }
+async function toRow(sessionId, c) {
+  const bytes = await c.blob.arrayBuffer();
+  return { key: `${sessionId}:${c.meta.index}`, sessionId, meta: c.meta, uploaded: c.uploaded, bytes, mime: c.blob.type || "image/png" };
+}
+function fromRow(row) {
+  return { meta: row.meta, uploaded: row.uploaded, blob: new Blob([row.bytes], { type: row.mime }) };
+}
 var VisualStorage = class {
   constructor() {
     this.dbP = openDb();
   }
   async saveCapture(sessionId, capture) {
     const db = await this.dbP;
-    const row = { ...capture, key: `${sessionId}:${capture.meta.index}`, sessionId };
+    const row = await toRow(sessionId, capture);
     await tx(db, CAPTURES, "readwrite", (s) => s.put(row));
   }
   async markUploaded(sessionId, index) {
@@ -262,7 +269,7 @@ var VisualStorage = class {
   async listCaptures(sessionId) {
     const db = await this.dbP;
     const rows = await tx(db, CAPTURES, "readonly", (s) => s.index("bySession").getAll(sessionId));
-    return rows.sort((a, b) => a.meta.index - b.meta.index);
+    return rows.sort((a, b) => a.meta.index - b.meta.index).map(fromRow);
   }
   async saveSession(state) {
     const db = await this.dbP;
@@ -447,7 +454,7 @@ var VisualTestRunner = class {
       await this.nav.settle();
       if (scenario.waitFor) {
         const ok = await waitForReady(scenario.waitFor, scenario.waitTimeout ?? this.readyTimeout);
-        if (!ok) throw new Error(`ready signal "${scenario.waitFor}" not seen within timeout`);
+        if (!ok) this.recordFailure(scenario.id, void 0, new Error(`ready signal "${scenario.waitFor}" not seen within timeout (captured anyway)`));
       }
       await this.stabilize();
       if (scenario.actions?.length) {
@@ -687,4 +694,4 @@ export {
   defineSuite,
   defineScenario
 };
-//# sourceMappingURL=chunk-URD23OS4.js.map
+//# sourceMappingURL=chunk-VICGCBJP.js.map

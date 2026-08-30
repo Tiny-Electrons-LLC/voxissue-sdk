@@ -97,13 +97,16 @@ export default defineComponent({
       }
       children.push(h('div', { class: 'vc-row' }, controls))
 
-      const panel = h('div', { class: 'vc-panel' }, children)
+      // data-visual-ignore: the capture engine drops these nodes from the clone
+      // so the panel + running overlay never appear in the screenshots they
+      // produce (otherwise the full-screen overlay would scrim every frame).
+      const panel = h('div', { class: 'vc-panel', 'data-visual-ignore': '' }, children)
 
       // While running, an overlay blocks stray taps that would corrupt the run.
       if (isRunning.value || isPaused.value) {
         return [
           panel,
-          h('div', { class: 'vc-overlay' }, [
+          h('div', { class: 'vc-overlay', 'data-visual-ignore': '' }, [
             h('div', { class: 'vc-overlay-card' }, [
               h('span', { class: 'vc-dot' }),
               h('span', `Visual Test ${isPaused.value ? 'Paused' : 'Running'}  ${done.value} / ${total.value}`),

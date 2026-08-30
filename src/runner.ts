@@ -129,7 +129,12 @@ export class VisualTestRunner {
       await this.nav.settle()
       if (scenario.waitFor) {
         const ok = await waitForReady(scenario.waitFor, scenario.waitTimeout ?? this.readyTimeout)
-        if (!ok) throw new Error(`ready signal "${scenario.waitFor}" not seen within timeout`)
+        // A missing ready signal is NOT fatal: a slow-loading or legitimately
+        // empty page (no data seeded) should still be captured - that rendered
+        // state is often exactly what you want to see. Record a soft failure for
+        // visibility, then proceed to capture the checkpoints anyway rather than
+        // aborting the whole scenario to a single error-state frame.
+        if (!ok) this.recordFailure(scenario.id, undefined, new Error(`ready signal "${scenario.waitFor}" not seen within timeout (captured anyway)`))
       }
       await this.stabilize()
 

@@ -212,6 +212,13 @@ export interface RunnerOptions {
   defaultReadyTimeout?: number
   /** Quiet-period (ms) after network idle + settle before capturing. */
   stabilizeQuietMs?: number
+  /**
+   * Extra pause (ms) after a scroll, before capturing, so smooth-scroll
+   * momentum + repaint settle (a scroll causes no network activity, so the
+   * network-quiet wait can't cover it). Default 400. Raise if scrolled captures
+   * look blurry / half-painted on slower devices.
+   */
+  postScrollSettleMs?: number
   /** Called on every session-state change (drives the UI panel). */
   onState?: (state: VisualSessionState) => void
 }

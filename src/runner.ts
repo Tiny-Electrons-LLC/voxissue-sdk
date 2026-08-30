@@ -33,6 +33,7 @@ export class VisualTestRunner {
 
   private readyTimeout: number
   private quietMs: number
+  private postScrollSettleMs: number
 
   constructor(opts: RunnerOptions) {
     this.opts = opts
@@ -41,6 +42,12 @@ export class VisualTestRunner {
     this.uploader = opts.uploader ?? new NoopUploader()
     this.readyTimeout = opts.defaultReadyTimeout ?? 10000
     this.quietMs = opts.stabilizeQuietMs ?? 300
+    // Extra pause AFTER a scroll, before capturing. A scroll triggers no
+    // network activity, so waitQuiet returns immediately and we'd shoot
+    // mid-momentum - on iOS Safari that yields a visibly blurry / half-painted
+    // frame. This gives smooth-scroll inertia, sticky repaint, and lazy content
+    // time to settle. Two animation frames + this delay.
+    this.postScrollSettleMs = opts.postScrollSettleMs ?? 400
     this.state = this.freshState()
   }
 
@@ -186,11 +193,22 @@ export class VisualTestRunner {
   }
 
   private async runCheckpoint(scenario: VisualScenario, cp: CapturePoint): Promise<void> {
-    if (cp.scroll) await performScroll(cp.scroll)
-    else if (cp.scrollTo) await performScroll({ selector: cp.scrollTo })
-    else if (typeof cp.scrollPercent === 'number') await performScroll({ percent: cp.scrollPercent })
+    let scrolled = false
+    if (cp.scroll) { await performScroll(cp.scroll); scrolled = true }
+    else if (cp.scrollTo) { await performScroll({ selector: cp.scrollTo }); scrolled = true }
+    else if (typeof cp.scrollPercent === 'number') { await performScroll({ percent: cp.scrollPercent }); scrolled = true }
     await this.stabilize()
+    // After a scroll, wait out momentum/repaint so the frame isn't blurry.
+    if (scrolled) await this.settleAfterScroll()
     await this.captureNow(scenario, cp.id, cp.label)
+  }
+
+  /** Two animation frames + a delay so a scrolled viewport is fully painted. */
+  private async settleAfterScroll(): Promise<void> {
+    if (typeof requestAnimationFrame === 'function') {
+      await new Promise<void>((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())))
+    }
+    await delay(this.postScrollSettleMs)
   }
 
   // ── capture + stabilization ─────────────────────────────────────────────────

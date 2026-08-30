@@ -1,5 +1,5 @@
-import { R as RunnerOptions, V as VisualSessionState, S as StoredCapture, C as CaptureEngine, a as CaptureRequest, b as CaptureResult, U as Uploader, c as Viewport, d as CaptureMetadata, e as VisualScenario, f as VisualSuite } from './zip-C5dXTyFt.js';
-export { g as CaptureAction, h as CapturePoint, i as ClickAction, N as NavigateAction, j as Navigator, k as ScrollAction, l as Selector, m as SessionFailure, n as SessionStatus, o as SetStateAction, p as VisualAction, W as WaitAction, q as WaitReadyAction, Z as ZipLayout, r as buildSessionZip, s as downloadBlob } from './zip-C5dXTyFt.js';
+import { R as RunnerOptions, V as VisualSessionState, S as StoredCapture, C as CaptureEngine, a as CaptureRequest, b as CaptureResult, U as Uploader, c as Viewport, d as CaptureMetadata, e as VisualScenario, f as VisualSuite } from './zip-XLfm8-A0.js';
+export { g as CaptureAction, h as CapturePoint, i as ClickAction, N as NavigateAction, j as Navigator, k as ScrollAction, l as Selector, m as SessionFailure, n as SessionStatus, o as SetStateAction, p as VisualAction, W as WaitAction, q as WaitReadyAction, Z as ZipLayout, r as buildSessionZip, s as downloadBlob } from './zip-XLfm8-A0.js';
 
 declare class VisualTestRunner {
     private opts;
@@ -14,6 +14,7 @@ declare class VisualTestRunner {
     private stopped;
     private readyTimeout;
     private quietMs;
+    private postScrollSettleMs;
     constructor(opts: RunnerOptions);
     getState(): VisualSessionState;
     private freshState;
@@ -26,6 +27,8 @@ declare class VisualTestRunner {
     private runScenario;
     private runAction;
     private runCheckpoint;
+    /** Two animation frames + a delay so a scrolled viewport is fully painted. */
+    private settleAfterScroll;
     /** Wait for network quiet + assets + a short settle so the frame is stable. */
     private stabilize;
     private captureNow;

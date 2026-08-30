@@ -375,6 +375,7 @@ var VisualTestRunner = class {
     this.uploader = opts.uploader ?? new NoopUploader();
     this.readyTimeout = opts.defaultReadyTimeout ?? 1e4;
     this.quietMs = opts.stabilizeQuietMs ?? 300;
+    this.postScrollSettleMs = opts.postScrollSettleMs ?? 400;
     this.state = this.freshState();
   }
   getState() {
@@ -517,11 +518,27 @@ var VisualTestRunner = class {
     }
   }
   async runCheckpoint(scenario, cp) {
-    if (cp.scroll) await performScroll(cp.scroll);
-    else if (cp.scrollTo) await performScroll({ selector: cp.scrollTo });
-    else if (typeof cp.scrollPercent === "number") await performScroll({ percent: cp.scrollPercent });
+    let scrolled = false;
+    if (cp.scroll) {
+      await performScroll(cp.scroll);
+      scrolled = true;
+    } else if (cp.scrollTo) {
+      await performScroll({ selector: cp.scrollTo });
+      scrolled = true;
+    } else if (typeof cp.scrollPercent === "number") {
+      await performScroll({ percent: cp.scrollPercent });
+      scrolled = true;
+    }
     await this.stabilize();
+    if (scrolled) await this.settleAfterScroll();
     await this.captureNow(scenario, cp.id, cp.label);
+  }
+  /** Two animation frames + a delay so a scrolled viewport is fully painted. */
+  async settleAfterScroll() {
+    if (typeof requestAnimationFrame === "function") {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r())));
+    }
+    await delay(this.postScrollSettleMs);
   }
   // ── capture + stabilization ─────────────────────────────────────────────────
   /** Wait for network quiet + assets + a short settle so the frame is stable. */
@@ -701,4 +718,4 @@ export {
   defineSuite,
   defineScenario
 };
-//# sourceMappingURL=chunk-W2OXLA3X.js.map
+//# sourceMappingURL=chunk-FMVTMWCH.js.map

@@ -67,6 +67,7 @@ export interface CreateVisualTestingOptions {
   env?: RunnerOptions['env']
   defaultReadyTimeout?: number
   stabilizeQuietMs?: number
+  postScrollSettleMs?: number
 }
 
 export interface VisualTestingController {
@@ -104,6 +105,7 @@ export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTes
       env: opts.env,
       defaultReadyTimeout: opts.defaultReadyTimeout,
       stabilizeQuietMs: opts.stabilizeQuietMs,
+      postScrollSettleMs: opts.postScrollSettleMs,
       onState: (s) => { state.value = s },
     })
   }

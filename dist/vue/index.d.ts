@@ -1,7 +1,7 @@
 import * as vue from 'vue';
 import { PropType, Ref } from 'vue';
 import { Router } from 'vue-router';
-import { j as Navigator, f as VisualSuite, C as CaptureEngine, U as Uploader, R as RunnerOptions, V as VisualSessionState, Z as ZipLayout } from '../zip-C5dXTyFt.js';
+import { j as Navigator, f as VisualSuite, C as CaptureEngine, U as Uploader, R as RunnerOptions, V as VisualSessionState, Z as ZipLayout } from '../zip-XLfm8-A0.js';
 
 declare class RouterNavigator implements Navigator {
     private router;
@@ -64,6 +64,7 @@ interface CreateVisualTestingOptions {
     env?: RunnerOptions['env'];
     defaultReadyTimeout?: number;
     stabilizeQuietMs?: number;
+    postScrollSettleMs?: number;
 }
 interface VisualTestingController {
     suites: VisualSuite[];

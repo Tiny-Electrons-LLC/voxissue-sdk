@@ -3,7 +3,7 @@ import {
   VisualTestRunner,
   buildSessionZip,
   downloadBlob
-} from "../chunk-W2OXLA3X.js";
+} from "../chunk-FMVTMWCH.js";
 
 // src/vue/index.ts
 import { ref, shallowRef, readonly, onMounted as onMounted2, onBeforeUnmount } from "vue";
@@ -167,6 +167,7 @@ function createVisualTesting(opts) {
       env: opts.env,
       defaultReadyTimeout: opts.defaultReadyTimeout,
       stabilizeQuietMs: opts.stabilizeQuietMs,
+      postScrollSettleMs: opts.postScrollSettleMs,
       onState: (s) => {
         state.value = s;
       }

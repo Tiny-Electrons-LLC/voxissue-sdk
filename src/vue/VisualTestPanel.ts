@@ -92,6 +92,19 @@ export default defineComponent({
       if (isPaused.value) controls.push(h('button', { class: 'vc-btn vc-btn-primary', onClick: () => c.resume() }, 'Resume'))
       if (isRunning.value || isPaused.value) controls.push(h('button', { class: 'vc-btn vc-btn-danger', onClick: () => c.stop() }, 'Stop'))
       if (isComplete.value) {
+        // ZIP layout toggle: All (flat _combined/), In folder (by scenario), or
+        // Both. Applied when Download ZIP is clicked.
+        children.push(h('div', { class: 'vc-row' }, [
+          h('label', 'ZIP'),
+          h('select', {
+            value: c.zipLayout.value,
+            onChange: (e: Event) => { c.zipLayout.value = (e.target as HTMLSelectElement).value as typeof c.zipLayout.value },
+          }, [
+            h('option', { value: 'both' }, 'Both'),
+            h('option', { value: 'combined' }, 'All (one folder)'),
+            h('option', { value: 'folder' }, 'In folders'),
+          ]),
+        ]))
         controls.push(h('button', { class: 'vc-btn vc-btn-primary', onClick: () => c.downloadZip() }, 'Download ZIP'))
         controls.push(h('button', { class: 'vc-btn', onClick: () => c.start() }, 'Run again'))
       }

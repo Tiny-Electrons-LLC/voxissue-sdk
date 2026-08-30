@@ -1,5 +1,5 @@
-import { R as RunnerOptions, V as VisualSessionState, S as StoredCapture, C as CaptureEngine, a as CaptureRequest, b as CaptureResult, U as Uploader, c as Viewport, d as CaptureMetadata, e as VisualScenario, f as VisualSuite } from './types-Dpmc6Bys.js';
-export { g as CaptureAction, h as CapturePoint, i as ClickAction, N as NavigateAction, j as Navigator, k as ScrollAction, l as Selector, m as SessionFailure, n as SessionStatus, o as SetStateAction, p as VisualAction, W as WaitAction, q as WaitReadyAction } from './types-Dpmc6Bys.js';
+import { R as RunnerOptions, V as VisualSessionState, S as StoredCapture, C as CaptureEngine, a as CaptureRequest, b as CaptureResult, U as Uploader, c as Viewport, d as CaptureMetadata, e as VisualScenario, f as VisualSuite } from './zip-C5dXTyFt.js';
+export { g as CaptureAction, h as CapturePoint, i as ClickAction, N as NavigateAction, j as Navigator, k as ScrollAction, l as Selector, m as SessionFailure, n as SessionStatus, o as SetStateAction, p as VisualAction, W as WaitAction, q as WaitReadyAction, Z as ZipLayout, r as buildSessionZip, s as downloadBlob } from './zip-C5dXTyFt.js';
 
 declare class VisualTestRunner {
     private opts;
@@ -97,10 +97,6 @@ declare class HttpUploader implements Uploader {
     flush(timeoutMs?: number): Promise<void>;
 }
 
-declare function buildSessionZip(session: VisualSessionState, captures: StoredCapture[]): Promise<Blob>;
-/** Trigger a browser download of a Blob. */
-declare function downloadBlob(blob: Blob, filename: string): void;
-
 declare class NetworkTracker {
     get pending(): number;
     install(): void;
@@ -140,4 +136,4 @@ declare function buildMetadata(args: {
 declare function defineSuite(suite: VisualSuite): VisualSuite;
 declare function defineScenario(scenario: VisualScenario): VisualScenario;
 
-export { CaptureEngine, CaptureMetadata, CaptureRequest, CaptureResult, DomCaptureEngine, type DomCaptureOptions, HttpUploader, type HttpUploaderOptions, NetworkTracker, NoopUploader, RunnerOptions, StoredCapture, Uploader, VISUAL_MODE_CLASS, Viewport, VisualScenario, VisualSessionState, VisualStorage, VisualSuite, VisualTestRunner, browserPlatform, buildFilename, buildMetadata, buildSessionZip, currentViewport, defineScenario, defineSuite, delay, disableVisualMode, downloadBlob, enableVisualMode, orientation, waitForAssets, waitForReady };
+export { CaptureEngine, CaptureMetadata, CaptureRequest, CaptureResult, DomCaptureEngine, type DomCaptureOptions, HttpUploader, type HttpUploaderOptions, NetworkTracker, NoopUploader, RunnerOptions, StoredCapture, Uploader, VISUAL_MODE_CLASS, Viewport, VisualScenario, VisualSessionState, VisualStorage, VisualSuite, VisualTestRunner, browserPlatform, buildFilename, buildMetadata, currentViewport, defineScenario, defineSuite, delay, disableVisualMode, enableVisualMode, orientation, waitForAssets, waitForReady };

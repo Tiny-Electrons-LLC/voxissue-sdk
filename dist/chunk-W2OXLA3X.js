@@ -637,7 +637,7 @@ var DomCaptureEngine = class {
 
 // src/zip.ts
 import JSZip from "jszip";
-async function buildSessionZip(session, captures) {
+async function buildSessionZip(session, captures, layout = "both") {
   const zip = new JSZip();
   zip.file(
     "session.json",
@@ -647,8 +647,15 @@ async function buildSessionZip(session, captures) {
       2
     )
   );
+  const wantFolder = layout === "folder" || layout === "both";
+  const wantCombined = layout === "combined" || layout === "both";
   for (const c of captures) {
-    zip.file(`${c.meta.scenario}/${c.meta.filename}`, c.blob);
+    if (wantFolder) {
+      zip.file(`${c.meta.scenario}/${c.meta.filename}`, c.blob);
+    }
+    if (wantCombined) {
+      zip.file(`_combined/${c.meta.filename}`, c.blob);
+    }
   }
   return zip.generateAsync({ type: "blob" });
 }
@@ -694,4 +701,4 @@ export {
   defineSuite,
   defineScenario
 };
-//# sourceMappingURL=chunk-VICGCBJP.js.map
+//# sourceMappingURL=chunk-W2OXLA3X.js.map

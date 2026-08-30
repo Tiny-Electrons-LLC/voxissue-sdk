@@ -16,7 +16,7 @@ function makeCapture(index: number, bytes: Uint8Array): StoredCapture {
       viewport: { width: 390, height: 844, devicePixelRatio: 3 },
       browser: 'test', platform: 'test', engine: 'test',
     } as StoredCapture['meta'],
-    blob: new Blob([bytes], { type: 'image/png' }),
+    blob: new Blob([bytes as BlobPart], { type: 'image/png' }),
     uploaded: false,
   }
 }

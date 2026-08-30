@@ -1,7 +1,7 @@
 import * as vue from 'vue';
 import { PropType, Ref } from 'vue';
 import { Router } from 'vue-router';
-import { j as Navigator, f as VisualSuite, C as CaptureEngine, U as Uploader, R as RunnerOptions, V as VisualSessionState } from '../types-Dpmc6Bys.js';
+import { j as Navigator, f as VisualSuite, C as CaptureEngine, U as Uploader, R as RunnerOptions, V as VisualSessionState, Z as ZipLayout } from '../zip-C5dXTyFt.js';
 
 declare class RouterNavigator implements Navigator {
     private router;
@@ -70,6 +70,8 @@ interface VisualTestingController {
     selectedSuiteId: Ref<string>;
     state: Readonly<Ref<VisualSessionState | null>>;
     running: Readonly<Ref<boolean>>;
+    /** ZIP layout: foldered by scenario, flat in _combined/, or both. */
+    zipLayout: Ref<ZipLayout>;
     start(): Promise<void>;
     pause(): void;
     resume(): void;

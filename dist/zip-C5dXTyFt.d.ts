@@ -167,4 +167,10 @@ interface RunnerOptions {
     onState?: (state: VisualSessionState) => void;
 }
 
-export type { CaptureEngine as C, NavigateAction as N, RunnerOptions as R, StoredCapture as S, Uploader as U, VisualSessionState as V, WaitAction as W, CaptureRequest as a, CaptureResult as b, Viewport as c, CaptureMetadata as d, VisualScenario as e, VisualSuite as f, CaptureAction as g, CapturePoint as h, ClickAction as i, Navigator as j, ScrollAction as k, Selector as l, SessionFailure as m, SessionStatus as n, SetStateAction as o, VisualAction as p, WaitReadyAction as q };
+/** Controls where capture PNGs land inside the ZIP. */
+type ZipLayout = 'folder' | 'combined' | 'both';
+declare function buildSessionZip(session: VisualSessionState, captures: StoredCapture[], layout?: ZipLayout): Promise<Blob>;
+/** Trigger a browser download of a Blob. */
+declare function downloadBlob(blob: Blob, filename: string): void;
+
+export { type CaptureEngine as C, type NavigateAction as N, type RunnerOptions as R, type StoredCapture as S, type Uploader as U, type VisualSessionState as V, type WaitAction as W, type ZipLayout as Z, type CaptureRequest as a, type CaptureResult as b, type Viewport as c, type CaptureMetadata as d, type VisualScenario as e, type VisualSuite as f, type CaptureAction as g, type CapturePoint as h, type ClickAction as i, type Navigator as j, type ScrollAction as k, type Selector as l, type SessionFailure as m, type SessionStatus as n, type SetStateAction as o, type VisualAction as p, type WaitReadyAction as q, buildSessionZip as r, downloadBlob as s };

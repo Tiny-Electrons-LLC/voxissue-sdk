@@ -9,6 +9,7 @@ export { VisualStorage } from './storage.js'
 export { NoopUploader, HttpUploader } from './uploader.js'
 export type { HttpUploaderOptions } from './uploader.js'
 export { buildSessionZip, downloadBlob } from './zip.js'
+export type { ZipLayout } from './zip.js'
 export {
   NetworkTracker, waitForReady, waitForAssets,
   enableVisualMode, disableVisualMode, VISUAL_MODE_CLASS, delay,

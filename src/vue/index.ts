@@ -9,6 +9,7 @@ import type { Router } from 'vue-router'
 import {
   VisualTestRunner, DomCaptureEngine, buildSessionZip, downloadBlob,
 } from '../index.js'
+import type { ZipLayout } from '../zip.js'
 import type {
   VisualSuite, VisualSessionState, RunnerOptions, CaptureEngine, Uploader,
 } from '../types.js'
@@ -73,6 +74,8 @@ export interface VisualTestingController {
   selectedSuiteId: Ref<string>
   state: Readonly<Ref<VisualSessionState | null>>
   running: Readonly<Ref<boolean>>
+  /** ZIP layout: foldered by scenario, flat in _combined/, or both. */
+  zipLayout: Ref<ZipLayout>
   start(): Promise<void>
   pause(): void
   resume(): void
@@ -88,6 +91,7 @@ export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTes
   const selectedSuiteId = ref(suites[0]?.id ?? '')
   const state = shallowRef<VisualSessionState | null>(null)
   const running = ref(false)
+  const zipLayout = ref<ZipLayout>('both')
   let runner: VisualTestRunner | null = null
 
   function makeRunner(): VisualTestRunner {
@@ -129,12 +133,12 @@ export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTes
   async function downloadZip(): Promise<void> {
     if (!runner || !state.value) return
     const captures = await runner.getStoredCaptures()
-    const zip = await buildSessionZip(state.value, captures)
+    const zip = await buildSessionZip(state.value, captures, zipLayout.value)
     const day = new Date().toISOString().slice(0, 10)
     downloadBlob(zip, `visual-capture-${day}.zip`)
   }
 
-  return { suites, selectedSuiteId, state: readonly(state) as Readonly<Ref<VisualSessionState | null>>, running: readonly(running), start, pause, resume, stop, downloadZip }
+  return { suites, selectedSuiteId, state: readonly(state) as Readonly<Ref<VisualSessionState | null>>, running: readonly(running), zipLayout, start, pause, resume, stop, downloadZip }
 }
 
 // ── useVisualReady: app pages call this to emit their readiness signal ────────

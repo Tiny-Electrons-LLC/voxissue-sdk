@@ -3,7 +3,7 @@ import {
   VisualTestRunner,
   buildSessionZip,
   downloadBlob
-} from "../chunk-VICGCBJP.js";
+} from "../chunk-W2OXLA3X.js";
 
 // src/vue/index.ts
 import { ref, shallowRef, readonly, onMounted as onMounted2, onBeforeUnmount } from "vue";
@@ -106,6 +106,19 @@ var VisualTestPanel_default = defineComponent({
       if (isPaused.value) controls.push(h("button", { class: "vc-btn vc-btn-primary", onClick: () => c.resume() }, "Resume"));
       if (isRunning.value || isPaused.value) controls.push(h("button", { class: "vc-btn vc-btn-danger", onClick: () => c.stop() }, "Stop"));
       if (isComplete.value) {
+        children.push(h("div", { class: "vc-row" }, [
+          h("label", "ZIP"),
+          h("select", {
+            value: c.zipLayout.value,
+            onChange: (e) => {
+              c.zipLayout.value = e.target.value;
+            }
+          }, [
+            h("option", { value: "both" }, "Both"),
+            h("option", { value: "combined" }, "All (one folder)"),
+            h("option", { value: "folder" }, "In folders")
+          ])
+        ]));
         controls.push(h("button", { class: "vc-btn vc-btn-primary", onClick: () => c.downloadZip() }, "Download ZIP"));
         controls.push(h("button", { class: "vc-btn", onClick: () => c.start() }, "Run again"));
       }
@@ -142,6 +155,7 @@ function createVisualTesting(opts) {
   const selectedSuiteId = ref(suites[0]?.id ?? "");
   const state = shallowRef(null);
   const running = ref(false);
+  const zipLayout = ref("both");
   let runner = null;
   function makeRunner() {
     const suite = suites.find((s) => s.id === selectedSuiteId.value) ?? suites[0];
@@ -184,11 +198,11 @@ function createVisualTesting(opts) {
   async function downloadZip() {
     if (!runner || !state.value) return;
     const captures = await runner.getStoredCaptures();
-    const zip = await buildSessionZip(state.value, captures);
+    const zip = await buildSessionZip(state.value, captures, zipLayout.value);
     const day = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
     downloadBlob(zip, `visual-capture-${day}.zip`);
   }
-  return { suites, selectedSuiteId, state: readonly(state), running: readonly(running), start, pause, resume, stop, downloadZip };
+  return { suites, selectedSuiteId, state: readonly(state), running: readonly(running), zipLayout, start, pause, resume, stop, downloadZip };
 }
 function useVisualReady(id, autoOnMount = false) {
   const readyEl = ref(null);

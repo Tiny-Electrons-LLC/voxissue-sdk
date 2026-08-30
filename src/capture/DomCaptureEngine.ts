@@ -62,6 +62,12 @@ export class DomCaptureEngine implements CaptureEngine {
         }
         if (cloned.ownerDocument && this.opts.onClone) this.opts.onClone(cloned.ownerDocument)
       },
+      // KNOWN LIMITATION (M2): the flattened foreignObject clone has no
+      // scrollport, so on a SCROLLED viewport capture, position:fixed elements
+      // render at their document position (translated off-screen) and
+      // position:sticky headers unstick. Top-of-page captures are faithful
+      // (the spike's 0.09-0.82% numbers). For scrolled sticky/fixed fidelity,
+      // prefer top-anchored checkpoints, or a future native capture engine.
     })
 
     return {

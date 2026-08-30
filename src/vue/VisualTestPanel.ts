@@ -22,7 +22,7 @@ const CSS = `
 .vc-progress-bar{height:100%;background:#3b82f6;transition:width .2s}
 .vc-muted{color:#9aa0a6}
 .vc-fail{color:#f87171;font-size:12px}
-.vc-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;pointer-events:auto}
+.vc-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.35);display:flex;align-items:flex-start;justify-content:center;pointer-events:auto;touch-action:none;overscroll-behavior:contain}
 .vc-overlay-card{margin-top:16px;background:#1a1f26;color:#e6e8eb;border:1px solid #2a2f36;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .vc-dot{width:8px;height:8px;border-radius:50%;background:#3b82f6;animation:vc-pulse 1s infinite}
 @keyframes vc-pulse{0%,100%{opacity:.4}50%{opacity:1}}
@@ -48,10 +48,14 @@ export default defineComponent({
     const status = computed(() => st.value?.status ?? 'idle')
     const total = computed(() => st.value?.totalCaptures ?? 0)
     const done = computed(() => st.value?.captureIndex ?? 0)
-    const pct = computed(() => total.value ? Math.round((done.value / total.value) * 100) : 0)
+    // Clamp: error-state captures are extra (not in the planned total), so
+    // done can exceed total; never show >100%. (M4)
+    const pct = computed(() => total.value ? Math.min(100, Math.round((done.value / total.value) * 100)) : 0)
     const isRunning = computed(() => status.value === 'running')
     const isPaused = computed(() => status.value === 'paused')
-    const isComplete = computed(() => status.value === 'complete' || status.value === 'stopped')
+    // Also treat 'error' as done so Download ZIP stays available - the partial
+    // captures are the most useful debugging artifact.
+    const isComplete = computed(() => status.value === 'complete' || status.value === 'stopped' || status.value === 'error')
 
     return () => {
       const children = [

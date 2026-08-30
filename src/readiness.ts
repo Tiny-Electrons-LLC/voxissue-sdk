@@ -12,33 +12,43 @@ const READY_ATTR = 'data-visual-ready'
  * go quiet. Installed once, idempotently, when visual mode is enabled. Only
  * counts app requests; it patches window.fetch and XMLHttpRequest send/loadend.
  */
+// Module-level singleton state: window.fetch / XHR.send are wrapped AT MOST ONCE
+// for the tab's lifetime, no matter how many runs/runners are created. Stacking a
+// new wrapper per run (each closing over the last) is a permanent global leak and
+// fights other instrumenters (Sentry). All NetworkTracker instances share this
+// one counter. (H1)
+let sharedPending = 0
+let installedOnce = false
+
 export class NetworkTracker {
-  pending = 0
-  private installed = false
-  private origFetch?: typeof window.fetch
+  get pending(): number { return sharedPending }
 
   install(): void {
-    if (this.installed || typeof window === 'undefined') return
-    this.installed = true
+    if (installedOnce || typeof window === 'undefined') return
+    installedOnce = true
 
     // fetch
-    this.origFetch = window.fetch.bind(window)
-    const self = this
+    const origFetch = window.fetch.bind(window)
     window.fetch = function patchedFetch(...args: Parameters<typeof fetch>) {
-      self.pending++
-      return self
-        .origFetch!(...args)
-        .finally(() => { self.pending = Math.max(0, self.pending - 1) })
+      sharedPending++
+      return origFetch(...args).finally(() => { sharedPending = Math.max(0, sharedPending - 1) })
     }
 
     // XHR
     const origSend = XMLHttpRequest.prototype.send
     XMLHttpRequest.prototype.send = function patchedSend(this: XMLHttpRequest, ...a: unknown[]) {
-      self.pending++
-      const done = () => { self.pending = Math.max(0, self.pending - 1) }
+      sharedPending++
+      const done = () => { sharedPending = Math.max(0, sharedPending - 1) }
       this.addEventListener('loadend', done, { once: true })
-      // @ts-expect-error passthrough
-      return origSend.apply(this, a)
+      try {
+        // @ts-expect-error passthrough
+        return origSend.apply(this, a)
+      } catch (e) {
+        // Synchronous throw (e.g. InvalidStateError) -> loadend never fires, so
+        // decrement here or `pending` leaks forever (L1).
+        sharedPending = Math.max(0, sharedPending - 1)
+        throw e
+      }
     }
   }
 
@@ -121,7 +131,9 @@ export function enableVisualMode(): void {
     .${VISUAL_MODE_CLASS} *,
     .${VISUAL_MODE_CLASS} *::before,
     .${VISUAL_MODE_CLASS} *::after {
-      animation-duration: 0s !important;
+      /* pause (not 0s duration): 0s on an infinite animation can spam
+         animationiteration; paused freezes cleanly. */
+      animation-play-state: paused !important;
       animation-delay: 0s !important;
       transition-duration: 0s !important;
       transition-delay: 0s !important;

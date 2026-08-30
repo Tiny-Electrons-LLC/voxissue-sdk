@@ -33,8 +33,8 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "modern-screenshot": "^4.6.6",
-    "jszip": "^3.10.1"
+    "jszip": "^3.10.1",
+    "modern-screenshot": "^4.6.6"
   },
   "peerDependencies": {
     "vue": "^3.4.0",
@@ -49,6 +49,8 @@
     }
   },
   "devDependencies": {
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^29.1.1",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4",

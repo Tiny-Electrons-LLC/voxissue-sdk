@@ -29,6 +29,12 @@ export class HttpUploader implements Uploader {
   private queue: StoredCapture[] = []
   private active = 0
   private opts: Required<Omit<HttpUploaderOptions, 'headers' | 'onUploaded'>> & HttpUploaderOptions
+  /** Captures that exhausted their retries; they stay in IDB (uploaded:false). */
+  readonly failed: StoredCapture[] = []
+  // Use the ORIGINAL fetch (captured at construction, before NetworkTracker may
+  // have wrapped it) so uploads don't count as "pending" network and stall the
+  // runner's stabilize() on every subsequent scenario.
+  private readonly rawFetch = (typeof window !== 'undefined' ? window.fetch.bind(window) : fetch)
 
   constructor(opts: HttpUploaderOptions) {
     this.opts = { concurrency: 2, maxRetries: 3, ...opts }
@@ -45,7 +51,10 @@ export class HttpUploader implements Uploader {
       this.active++
       this.send(cap)
         .then(() => this.opts.onUploaded?.(cap))
-        .catch(() => this.queue.push(cap)) // requeue on hard failure
+        // Hard failure after maxRetries: DROP it (do NOT requeue - that loops
+        // forever and deadlocks flush()). It's retained in IDB, so a later run
+        // or manual retry can re-send it. (H2)
+        .catch(() => { this.failed.push(cap) })
         .finally(() => { this.active--; this.pump() })
     }
   }
@@ -55,7 +64,7 @@ export class HttpUploader implements Uploader {
       const form = new FormData()
       form.append('meta', JSON.stringify(cap.meta))
       form.append('image', cap.blob, cap.meta.filename)
-      const res = await fetch(this.opts.endpoint, { method: 'POST', headers: this.opts.headers, body: form })
+      const res = await this.rawFetch(this.opts.endpoint, { method: 'POST', headers: this.opts.headers, body: form })
       if (!res.ok) throw new Error(`upload ${res.status}`)
     } catch (e) {
       if (attempt >= this.opts.maxRetries) throw e
@@ -64,8 +73,10 @@ export class HttpUploader implements Uploader {
     }
   }
 
-  async flush(): Promise<void> {
-    while (this.active > 0 || this.queue.length > 0) {
+  async flush(timeoutMs = 30000): Promise<void> {
+    // Deadline so a stuck queue can never hang the caller (the run awaits this).
+    const deadline = Date.now() + timeoutMs
+    while ((this.active > 0 || this.queue.length > 0) && Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 100))
     }
   }

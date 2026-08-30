@@ -87,4 +87,18 @@ export class VisualStorage {
     for (const r of rows) await tx(db, CAPTURES, 'readwrite', (s) => s.delete(r.key))
     await tx(db, SESSIONS, 'readwrite', (s) => s.delete(sessionId))
   }
+
+  /**
+   * Prune every session EXCEPT `keepSessionId`, so IndexedDB doesn't grow
+   * unbounded across runs (each run is ~11 PNGs at DPR 3 = tens of MB). On iOS
+   * Safari an over-quota origin gets its whole storage evicted, so keeping only
+   * the current run's captures is deliberate. (H5)
+   */
+  async pruneOldSessions(keepSessionId: string): Promise<void> {
+    const db = await this.dbP
+    const sessions = await tx<VisualSessionState[]>(db, SESSIONS, 'readonly', (s) => s.getAll())
+    for (const s of sessions) {
+      if (s.sessionId !== keepSessionId) await this.clearSession(s.sessionId)
+    }
+  }
 }

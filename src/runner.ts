@@ -70,7 +70,14 @@ export class VisualTestRunner {
 
   async start(): Promise<VisualSessionState> {
     this.stopped = false
+    // Clear any stale pause gate from a prior run so a reused runner can't
+    // deadlock at the first gate() (H4).
+    this.pauseGate = null
+    this.resumeFn = null
     this.state = this.freshState()
+    // Prune old sessions so IndexedDB doesn't grow unbounded across runs (H5);
+    // best-effort, never blocks the run.
+    void this.storage.pruneOldSessions(this.state.sessionId).catch(() => {})
     this.net.install()
     enableVisualMode()
     this.emit({ status: 'running' })

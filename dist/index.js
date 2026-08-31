@@ -1,6 +1,7 @@
 import {
   DomCaptureEngine,
   HttpUploader,
+  MipCaptureEngine,
   NetworkTracker,
   NoopUploader,
   VISUAL_MODE_CLASS,
@@ -17,13 +18,15 @@ import {
   disableVisualMode,
   downloadBlob,
   enableVisualMode,
+  isMipHost,
   orientation,
   waitForAssets,
   waitForReady
-} from "./chunk-EHEIR3C7.js";
+} from "./chunk-APR47V5W.js";
 export {
   DomCaptureEngine,
   HttpUploader,
+  MipCaptureEngine,
   NetworkTracker,
   NoopUploader,
   VISUAL_MODE_CLASS,
@@ -40,6 +43,7 @@ export {
   disableVisualMode,
   downloadBlob,
   enableVisualMode,
+  isMipHost,
   orientation,
   waitForAssets,
   waitForReady

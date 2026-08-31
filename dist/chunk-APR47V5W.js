@@ -724,6 +724,39 @@ function defineScenario(scenario) {
   return scenario;
 }
 
+// src/capture/MipCaptureEngine.ts
+function hooks() {
+  if (typeof window === "undefined") return null;
+  const w = window;
+  return typeof w.mip?.capture === "function" ? w.mip : null;
+}
+function isMipHost() {
+  return hooks() !== null;
+}
+var PLACEHOLDER_PNG = Uint8Array.from(atob(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+), (c) => c.charCodeAt(0));
+var MipCaptureEngine = class {
+  constructor() {
+    this.id = "native:mip";
+  }
+  async capture(_req) {
+    const mip = hooks();
+    if (!mip) throw new Error("MipCaptureEngine used outside the MIP web view");
+    mip.capture();
+    await new Promise((r) => setTimeout(r, 350));
+    return {
+      blob: new Blob([PLACEHOLDER_PNG], { type: "image/png" }),
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+  }
+  /** Signal MIP that the whole run is over (it advances to the next pages.json URL). */
+  finishRun() {
+    hooks()?.done();
+  }
+};
+
 export {
   NetworkTracker,
   waitForReady,
@@ -745,6 +778,8 @@ export {
   buildSessionZip,
   downloadBlob,
   defineSuite,
-  defineScenario
+  defineScenario,
+  isMipHost,
+  MipCaptureEngine
 };
-//# sourceMappingURL=chunk-EHEIR3C7.js.map
+//# sourceMappingURL=chunk-APR47V5W.js.map

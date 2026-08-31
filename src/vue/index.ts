@@ -14,6 +14,7 @@ import type {
   VisualSuite, VisualSessionState, RunnerOptions, CaptureEngine, Uploader,
 } from '../types.js'
 import { RouterNavigator } from './RouterNavigator.js'
+import { MipCaptureEngine, isMipHost } from '../capture/MipCaptureEngine.js'
 
 export { RouterNavigator }
 export { default as VisualTestPanel } from './VisualTestPanel.js'
@@ -85,7 +86,9 @@ export interface VisualTestingController {
 }
 
 export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTestingController {
-  const engine = opts.engine ?? new DomCaptureEngine()
+  // Inside the MIP iOS app, hand the shutter to the native snapshot — it's a
+  // real WKWebView capture, strictly better than the DOM reconstruction.
+  const engine = opts.engine ?? (isMipHost() ? new MipCaptureEngine() : new DomCaptureEngine())
   const navigator = new RouterNavigator(opts.router)
 
   const suites = opts.suites
@@ -125,6 +128,8 @@ export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTes
       state.value = { ...s }
     } finally {
       running.value = false
+      // MIP host: the run is done — let the app advance to its next page.
+      if (engine instanceof MipCaptureEngine) engine.finishRun()
     }
   }
 

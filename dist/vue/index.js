@@ -1,9 +1,11 @@
 import {
   DomCaptureEngine,
+  MipCaptureEngine,
   VisualTestRunner,
   buildSessionZip,
-  downloadBlob
-} from "../chunk-EHEIR3C7.js";
+  downloadBlob,
+  isMipHost
+} from "../chunk-APR47V5W.js";
 
 // src/vue/index.ts
 import { ref, shallowRef, readonly, onMounted as onMounted2, onBeforeUnmount } from "vue";
@@ -149,7 +151,7 @@ function isVisualTestingAllowed(g) {
   return g.isStaff === void 0 ? true : g.isStaff === true;
 }
 function createVisualTesting(opts) {
-  const engine = opts.engine ?? new DomCaptureEngine();
+  const engine = opts.engine ?? (isMipHost() ? new MipCaptureEngine() : new DomCaptureEngine());
   const navigator = new RouterNavigator(opts.router);
   const suites = opts.suites;
   const selectedSuiteId = ref(suites[0]?.id ?? "");
@@ -185,6 +187,7 @@ function createVisualTesting(opts) {
       state.value = { ...s };
     } finally {
       running.value = false;
+      if (engine instanceof MipCaptureEngine) engine.finishRun();
     }
   }
   function pause() {

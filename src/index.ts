@@ -16,3 +16,4 @@ export {
 } from './readiness.js'
 export { currentViewport, orientation, browserPlatform, buildFilename, buildMetadata } from './dom.js'
 export { defineSuite, defineScenario } from './manifest.js'
+export { MipCaptureEngine, isMipHost } from './capture/MipCaptureEngine.js'

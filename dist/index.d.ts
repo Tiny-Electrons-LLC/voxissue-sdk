@@ -139,4 +139,13 @@ declare function buildMetadata(args: {
 declare function defineSuite(suite: VisualSuite): VisualSuite;
 declare function defineScenario(scenario: VisualScenario): VisualScenario;
 
-export { CaptureEngine, CaptureMetadata, CaptureRequest, CaptureResult, DomCaptureEngine, type DomCaptureOptions, HttpUploader, type HttpUploaderOptions, NetworkTracker, NoopUploader, RunnerOptions, StoredCapture, Uploader, VISUAL_MODE_CLASS, Viewport, VisualScenario, VisualSessionState, VisualStorage, VisualSuite, VisualTestRunner, browserPlatform, buildFilename, buildMetadata, currentViewport, defineScenario, defineSuite, delay, disableVisualMode, enableVisualMode, orientation, waitForAssets, waitForReady };
+/** True when running inside the MIP capture web view. */
+declare function isMipHost(): boolean;
+declare class MipCaptureEngine implements CaptureEngine {
+    readonly id = "native:mip";
+    capture(_req: CaptureRequest): Promise<CaptureResult>;
+    /** Signal MIP that the whole run is over (it advances to the next pages.json URL). */
+    finishRun(): void;
+}
+
+export { CaptureEngine, CaptureMetadata, CaptureRequest, CaptureResult, DomCaptureEngine, type DomCaptureOptions, HttpUploader, type HttpUploaderOptions, MipCaptureEngine, NetworkTracker, NoopUploader, RunnerOptions, StoredCapture, Uploader, VISUAL_MODE_CLASS, Viewport, VisualScenario, VisualSessionState, VisualStorage, VisualSuite, VisualTestRunner, browserPlatform, buildFilename, buildMetadata, currentViewport, defineScenario, defineSuite, delay, disableVisualMode, enableVisualMode, isMipHost, orientation, waitForAssets, waitForReady };

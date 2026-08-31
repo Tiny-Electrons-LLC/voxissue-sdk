@@ -177,9 +177,21 @@ function createVisualTesting(opts) {
     });
   }
   if ((opts.autoStartInMip ?? true) && isMipHost()) {
-    setTimeout(() => {
-      void start();
-    }, 800);
+    const RAN_KEY = "vc-mip-autorun-done";
+    let alreadyRan = false;
+    try {
+      alreadyRan = sessionStorage.getItem(RAN_KEY) === "1";
+    } catch {
+    }
+    if (!alreadyRan) {
+      try {
+        sessionStorage.setItem(RAN_KEY, "1");
+      } catch {
+      }
+      setTimeout(() => {
+        void start();
+      }, 800);
+    }
   }
   async function start() {
     if (running.value) return;

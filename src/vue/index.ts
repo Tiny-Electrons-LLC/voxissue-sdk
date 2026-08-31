@@ -117,8 +117,17 @@ export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTes
 
   // MIP host: the whole run is unattended — start as soon as the controller
   // exists (the app decides when that is, e.g. once auth/allowlist resolves).
+  // Guarded to ONCE per capture session: MIP loads every pages.json URL and each
+  // load boots the app — without the guard the suite (which navigates the SPA
+  // itself, usually starting at /dashboard) would re-run on every single page.
   if ((opts.autoStartInMip ?? true) && isMipHost()) {
-    setTimeout(() => { void start() }, 800)
+    const RAN_KEY = 'vc-mip-autorun-done'
+    let alreadyRan = false
+    try { alreadyRan = sessionStorage.getItem(RAN_KEY) === '1' } catch { /* private mode */ }
+    if (!alreadyRan) {
+      try { sessionStorage.setItem(RAN_KEY, '1') } catch { /* ignore */ }
+      setTimeout(() => { void start() }, 800)
+    }
   }
 
   async function start(): Promise<void> {

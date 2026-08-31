@@ -1,11 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import 'fake-indexeddb/auto'
 import { VisualTestRunner } from '../runner.js'
-import type { CaptureEngine, CaptureResult, Navigator, VisualSuite, Uploader, StoredCapture } from '../types.js'
+import type { CaptureEngine, CaptureResult, Navigator, VisualSuite } from '../types.js'
 
-// jsdom gives us document/window/XHR; fake-indexeddb/auto provides indexedDB. A
-// data-visual-ready element is added so waitForReady resolves immediately.
+// jsdom gives us document/window/XHR. A data-visual-ready element is added so
+// waitForReady resolves immediately.
 beforeEach(() => {
   document.body.innerHTML = '<div data-visual-ready="a"></div><div data-visual-ready="b"></div>'
 })
@@ -26,12 +25,6 @@ class FakeNav implements Navigator {
   currentRoute() { return this.route }
   async settle() {}
 }
-class FakeUploader implements Uploader {
-  uploaded: StoredCapture[] = []
-  async upload(c: StoredCapture) { this.uploaded.push(c) }
-  async flush() {}
-}
-
 const suite: VisualSuite = {
   id: 's', name: 'S',
   scenarios: [
@@ -44,7 +37,7 @@ function make(engine = new FakeEngine()) {
   return {
     engine,
     runner: new VisualTestRunner({
-      suite, engine, navigator: new FakeNav(), uploader: new FakeUploader(),
+      suite, engine, navigator: new FakeNav(),
       stabilizeQuietMs: 0, defaultReadyTimeout: 50,
     }),
   }
@@ -67,7 +60,7 @@ describe('VisualTestRunner', () => {
     const engine = new FakeEngine()
     let stopped = false
     const r = new VisualTestRunner({
-      suite, engine, navigator: new FakeNav(), uploader: new FakeUploader(),
+      suite, engine, navigator: new FakeNav(),
       stabilizeQuietMs: 0, defaultReadyTimeout: 50,
       onState: (s) => { if (!stopped && s.captureIndex >= 1) { stopped = true; r.stop() } },
     })

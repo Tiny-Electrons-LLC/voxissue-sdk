@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Public types for the visual-capture library. These are framework-agnostic:
+// Public types for the VoxIssue SDK. These are framework-agnostic:
 // nothing here imports Vue. The runner, manifest, storage, and capture engine all
 // speak in these shapes so the capture mechanism (DOM today, native iOS later)
 // and the navigation mechanism (vue-router today) are swappable.
@@ -120,36 +120,9 @@ export interface CaptureResult {
 }
 
 export interface CaptureEngine {
-  /** Human-readable engine id recorded in metadata (e.g. "dom:modern-screenshot"). */
+  /** Human-readable engine id (e.g. "native:voxissue"). */
   readonly id: string
   capture(req: CaptureRequest): Promise<CaptureResult>
-}
-
-// ── Per-capture metadata (one JSON record per PNG) ───────────────────────────
-
-export interface CaptureMetadata {
-  sessionId: string
-  index: number
-  scenario: string
-  checkpoint: string
-  label?: string
-  route: string
-  timestamp: string
-  viewport: Viewport
-  orientation: 'portrait' | 'landscape'
-  browser: string
-  platform: string
-  engine: string
-  appVersion?: string
-  gitCommit?: string
-  /** Stable filename, e.g. 001_inventory-devices_devices-top_390x844.png */
-  filename: string
-}
-
-export interface StoredCapture {
-  meta: CaptureMetadata
-  blob: Blob
-  uploaded: boolean
 }
 
 // ── Session ──────────────────────────────────────────────────────────────────
@@ -178,8 +151,6 @@ export interface VisualSessionState {
   currentScenarioName?: string
   currentCheckpointId?: string
   failures: SessionFailure[]
-  /** Number of captures uploaded so far (Phase 2). */
-  uploaded: number
 }
 
 // ── Navigator (how the runner changes app route). vue-router adapter provides
@@ -192,20 +163,12 @@ export interface Navigator {
   settle(): Promise<void>
 }
 
-// ── Uploader contract (Phase 2; a no-op default lets the MVP ship). ──────────
-
-export interface Uploader {
-  upload(capture: StoredCapture): Promise<void>
-  flush(): Promise<void>
-}
-
 // ── Runner options ───────────────────────────────────────────────────────────
 
 export interface RunnerOptions {
   suite: VisualSuite
   engine: CaptureEngine
   navigator: Navigator
-  uploader?: Uploader
   /** Environment metadata for records. */
   env?: { appVersion?: string; gitCommit?: string }
   /** Default ready-timeout (ms) when a scenario doesn't set one. */

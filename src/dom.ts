@@ -1,6 +1,6 @@
 // Scroll positioning + environment/metadata helpers. Framework-agnostic.
 
-import type { ScrollAction, Viewport, CaptureMetadata } from './types.js'
+import type { ScrollAction, Viewport } from './types.js'
 import { delay } from './readiness.js'
 
 /** Move the viewport to a named position / anchor / fraction, then settle. */
@@ -53,40 +53,3 @@ export function browserPlatform(): { browser: string; platform: string } {
 }
 
 /** Stable, sortable filename: 001_scenario_checkpoint_390x844.png */
-export function buildFilename(index: number, scenario: string, checkpoint: string, vp: Viewport): string {
-  const n = String(index).padStart(3, '0')
-  const slug = (s: string) => s.replace(/[^a-z0-9-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase()
-  return `${n}_${slug(scenario)}_${slug(checkpoint)}_${vp.width}x${vp.height}.png`
-}
-
-export function buildMetadata(args: {
-  sessionId: string
-  index: number
-  scenario: string
-  checkpoint: string
-  label?: string
-  route: string
-  engine: string
-  appVersion?: string
-  gitCommit?: string
-}): CaptureMetadata {
-  const vp = currentViewport()
-  const { browser, platform } = browserPlatform()
-  return {
-    sessionId: args.sessionId,
-    index: args.index,
-    scenario: args.scenario,
-    checkpoint: args.checkpoint,
-    label: args.label,
-    route: args.route,
-    timestamp: new Date().toISOString(),
-    viewport: vp,
-    orientation: orientation(),
-    browser,
-    platform,
-    engine: args.engine,
-    appVersion: args.appVersion,
-    gitCommit: args.gitCommit,
-    filename: buildFilename(args.index, args.scenario, args.checkpoint, vp),
-  }
-}

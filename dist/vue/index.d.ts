@@ -1,7 +1,7 @@
-import * as vue from 'vue';
-import { PropType, Ref } from 'vue';
+import { Ref } from 'vue';
 import { Router } from 'vue-router';
-import { j as Navigator, f as VisualSuite, C as CaptureEngine, U as Uploader, R as RunnerOptions, V as VisualSessionState, Z as ZipLayout } from '../zip-XLfm8-A0.js';
+import { i as Navigator, c as VisualSuite, d as CaptureEngine, R as RunnerOptions, V as VisualSessionState } from '../gate-DxqC1h9r.js';
+export { o as VisualGateInput, q as isVisualTestingAllowed } from '../gate-DxqC1h9r.js';
 
 declare class RouterNavigator implements Navigator {
     private router;
@@ -11,56 +11,12 @@ declare class RouterNavigator implements Navigator {
     settle(): Promise<void>;
 }
 
-declare const _default: vue.DefineComponent<vue.ExtractPropTypes<{
-    controller: {
-        type: PropType<VisualTestingController>;
-        required: true;
-    };
-}>, (() => null) | (() => vue.VNode<vue.RendererNode, vue.RendererElement, {
-    [key: string]: any;
-}> | vue.VNode<vue.RendererNode, vue.RendererElement, {
-    [key: string]: any;
-}>[]), {}, {}, {}, vue.ComponentOptionsMixin, vue.ComponentOptionsMixin, {}, string, vue.PublicProps, Readonly<vue.ExtractPropTypes<{
-    controller: {
-        type: PropType<VisualTestingController>;
-        required: true;
-    };
-}>> & Readonly<{}>, {}, {}, {}, {}, string, vue.ComponentProvideOptions, true, {}, any>;
-
-interface VisualGateInput {
-    /** import.meta.env.DEV (or a dev/staging flag). Opens the gate outright. */
-    isDev?: boolean;
-    /**
-     * Explicit opt-in flag, e.g. import.meta.env.VITE_VISUAL_TESTING === 'true'.
-     * REQUIRED in production - it's the only thing that can enable the tool there.
-     */
-    featureFlag?: boolean;
-    /**
-     * Whether the current user is internal STAFF (superadmin / allowlisted). This
-     * is NOT a tenant role: in a multi-tenant SaaS, a tenant "owner" is a paying
-     * customer, so passing isOwner here would expose the tool - which screenshots
-     * live tenant data - to every customer. `isStaff` only NARROWS access; it can
-     * never open the gate on its own (the feature flag must also be on).
-     */
-    isStaff?: boolean;
-}
-/**
- * Access rules (deliberately conservative - this tool captures live DOM/tenant
- * data to images + IndexedDB + a downloadable ZIP):
- *   - dev/staging (isDev): allowed.
- *   - production: allowed ONLY when the feature flag is on. If isStaff is
- *     provided, the flag AND isStaff are both required (so a leaked flag alone
- *     doesn't expose it to a customer). isStaff by itself never grants access.
- * Never pass a tenant role (owner/admin) as isStaff.
- */
-declare function isVisualTestingAllowed(g: VisualGateInput): boolean;
 interface CreateVisualTestingOptions {
     router: Router;
     /** One or more suites the user can pick from. */
     suites: VisualSuite[];
-    /** Capture engine; defaults to DOM capture (modern-screenshot). */
+    /** Capture engine; defaults to the VoxIssue native-shutter engine. */
     engine?: CaptureEngine;
-    uploader?: Uploader;
     env?: RunnerOptions['env'];
     defaultReadyTimeout?: number;
     stabilizeQuietMs?: number;
@@ -73,13 +29,10 @@ interface VisualTestingController {
     selectedSuiteId: Ref<string>;
     state: Readonly<Ref<VisualSessionState | null>>;
     running: Readonly<Ref<boolean>>;
-    /** ZIP layout: foldered by scenario, flat in _combined/, or both. */
-    zipLayout: Ref<ZipLayout>;
     start(): Promise<void>;
     pause(): void;
     resume(): void;
     stop(): void;
-    downloadZip(): Promise<void>;
 }
 declare function createVisualTesting(opts: CreateVisualTestingOptions): VisualTestingController;
 /**
@@ -98,4 +51,4 @@ declare function useVisualReady(id: string, autoOnMount?: boolean): {
     clearReady: () => void;
 };
 
-export { type CreateVisualTestingOptions, RouterNavigator, type VisualGateInput, _default as VisualTestPanel, type VisualTestingController, createVisualTesting, isVisualTestingAllowed, useVisualReady };
+export { type CreateVisualTestingOptions, RouterNavigator, type VisualTestingController, createVisualTesting, useVisualReady };

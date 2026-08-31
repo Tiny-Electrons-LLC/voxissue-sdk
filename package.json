@@ -1,7 +1,7 @@
 {
   "name": "@tiny-electrons/voxissue-sdk",
-  "version": "0.2.0",
-  "description": "VoxIssue SDK: self-driving in-SPA visual capture + regression runner, with native shutter hooks for the VoxIssue iOS app. Framework-agnostic core, swappable capture engine, thin Vue adapter.",
+  "version": "0.3.0",
+  "description": "VoxIssue SDK: drives a web app suite-by-suite and signals the VoxIssue iOS app when to take native screenshots. The SDK itself never captures pixels. Framework-agnostic core with Vue and React adapters.",
   "type": "module",
   "license": "UNLICENSED",
   "private": true,
@@ -23,6 +23,10 @@
     "./vue": {
       "types": "./dist/vue/index.d.ts",
       "import": "./dist/vue/index.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
     }
   },
   "scripts": {
@@ -33,13 +37,10 @@
     "test:watch": "vitest",
     "release:build": "npm run test && npm run build"
   },
-  "dependencies": {
-    "jszip": "^3.10.1",
-    "modern-screenshot": "^4.6.6"
-  },
   "peerDependencies": {
-    "vue": "^3.4.0",
-    "vue-router": "^4.0.0 || ^5.0.0"
+    "vue": ">=3.4",
+    "vue-router": ">=4.2",
+    "react": ">=18"
   },
   "peerDependenciesMeta": {
     "vue": {
@@ -47,15 +48,19 @@
     },
     "vue-router": {
       "optional": true
+    },
+    "react": {
+      "optional": true
     }
   },
   "devDependencies": {
-    "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4",
     "vue": "^3.5.41",
-    "vue-router": "^5.2.0"
+    "vue-router": "^5.2.0",
+    "react": "^19.2.0",
+    "@types/react": "^19.2.0"
   }
 }

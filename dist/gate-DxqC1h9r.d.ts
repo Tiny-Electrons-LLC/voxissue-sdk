@@ -87,32 +87,9 @@ interface CaptureResult {
     height: number;
 }
 interface CaptureEngine {
-    /** Human-readable engine id recorded in metadata (e.g. "dom:modern-screenshot"). */
+    /** Human-readable engine id (e.g. "native:voxissue"). */
     readonly id: string;
     capture(req: CaptureRequest): Promise<CaptureResult>;
-}
-interface CaptureMetadata {
-    sessionId: string;
-    index: number;
-    scenario: string;
-    checkpoint: string;
-    label?: string;
-    route: string;
-    timestamp: string;
-    viewport: Viewport;
-    orientation: 'portrait' | 'landscape';
-    browser: string;
-    platform: string;
-    engine: string;
-    appVersion?: string;
-    gitCommit?: string;
-    /** Stable filename, e.g. 001_inventory-devices_devices-top_390x844.png */
-    filename: string;
-}
-interface StoredCapture {
-    meta: CaptureMetadata;
-    blob: Blob;
-    uploaded: boolean;
 }
 interface SessionFailure {
     scenario: string;
@@ -136,8 +113,6 @@ interface VisualSessionState {
     currentScenarioName?: string;
     currentCheckpointId?: string;
     failures: SessionFailure[];
-    /** Number of captures uploaded so far (Phase 2). */
-    uploaded: number;
 }
 interface Navigator {
     goto(route: string): Promise<void>;
@@ -145,15 +120,10 @@ interface Navigator {
     /** Await the framework's render settle (e.g. Vue nextTick). */
     settle(): Promise<void>;
 }
-interface Uploader {
-    upload(capture: StoredCapture): Promise<void>;
-    flush(): Promise<void>;
-}
 interface RunnerOptions {
     suite: VisualSuite;
     engine: CaptureEngine;
     navigator: Navigator;
-    uploader?: Uploader;
     /** Environment metadata for records. */
     env?: {
         appVersion?: string;
@@ -174,10 +144,32 @@ interface RunnerOptions {
     onState?: (state: VisualSessionState) => void;
 }
 
-/** Controls where capture PNGs land inside the ZIP. */
-type ZipLayout = 'folder' | 'combined' | 'both';
-declare function buildSessionZip(session: VisualSessionState, captures: StoredCapture[], layout?: ZipLayout): Promise<Blob>;
-/** Trigger a browser download of a Blob. */
-declare function downloadBlob(blob: Blob, filename: string): void;
+interface VisualGateInput {
+    /** import.meta.env.DEV (or a dev/staging flag). Opens the gate outright. */
+    isDev?: boolean;
+    /**
+     * Explicit opt-in flag, e.g. import.meta.env.VITE_VISUAL_TESTING === 'true'.
+     * REQUIRED in production - it's the only thing that can enable the tool there.
+     */
+    featureFlag?: boolean;
+    /**
+     * Whether the current user is internal STAFF (superadmin / allowlisted). This
+     * is NOT a tenant role: in a multi-tenant SaaS, a tenant "owner" is a paying
+     * customer, so passing isOwner here would expose the tool - which screenshots
+     * live tenant data - to every customer. `isStaff` only NARROWS access; it can
+     * never open the gate on its own (the feature flag must also be on).
+     */
+    isStaff?: boolean;
+}
+/**
+ * Access rules (deliberately conservative - this tool captures live DOM/tenant
+ * data to images + IndexedDB + a downloadable ZIP):
+ *   - dev/staging (isDev): allowed.
+ *   - production: allowed ONLY when the feature flag is on. If isStaff is
+ *     provided, the flag AND isStaff are both required (so a leaked flag alone
+ *     doesn't expose it to a customer). isStaff by itself never grants access.
+ * Never pass a tenant role (owner/admin) as isStaff.
+ */
+declare function isVisualTestingAllowed(g: VisualGateInput): boolean;
 
-export { type CaptureEngine as C, type NavigateAction as N, type RunnerOptions as R, type StoredCapture as S, type Uploader as U, type VisualSessionState as V, type WaitAction as W, type ZipLayout as Z, type CaptureRequest as a, type CaptureResult as b, type Viewport as c, type CaptureMetadata as d, type VisualScenario as e, type VisualSuite as f, type CaptureAction as g, type CapturePoint as h, type ClickAction as i, type Navigator as j, type ScrollAction as k, type Selector as l, type SessionFailure as m, type SessionStatus as n, type SetStateAction as o, type VisualAction as p, type WaitReadyAction as q, buildSessionZip as r, downloadBlob as s };
+export { type CaptureAction as C, type NavigateAction as N, type RunnerOptions as R, type ScrollAction as S, type VisualSessionState as V, type WaitAction as W, type Viewport as a, type VisualScenario as b, type VisualSuite as c, type CaptureEngine as d, type CapturePoint as e, type CaptureRequest as f, type CaptureResult as g, type ClickAction as h, type Navigator as i, type Selector as j, type SessionFailure as k, type SessionStatus as l, type SetStateAction as m, type VisualAction as n, type VisualGateInput as o, type WaitReadyAction as p, isVisualTestingAllowed as q };

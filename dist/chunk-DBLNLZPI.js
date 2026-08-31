@@ -184,187 +184,10 @@ function browserPlatform() {
   else if (/Linux/.test(ua)) platform = "Linux";
   return { browser, platform };
 }
-function buildFilename(index, scenario, checkpoint, vp) {
-  const n = String(index).padStart(3, "0");
-  const slug = (s) => s.replace(/[^a-z0-9-]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase();
-  return `${n}_${slug(scenario)}_${slug(checkpoint)}_${vp.width}x${vp.height}.png`;
-}
-function buildMetadata(args) {
-  const vp = currentViewport();
-  const { browser, platform } = browserPlatform();
-  return {
-    sessionId: args.sessionId,
-    index: args.index,
-    scenario: args.scenario,
-    checkpoint: args.checkpoint,
-    label: args.label,
-    route: args.route,
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    viewport: vp,
-    orientation: orientation(),
-    browser,
-    platform,
-    engine: args.engine,
-    appVersion: args.appVersion,
-    gitCommit: args.gitCommit,
-    filename: buildFilename(args.index, args.scenario, args.checkpoint, vp)
-  };
-}
-
-// src/storage.ts
-var DB_NAME = "visual-capture";
-var DB_VERSION = 1;
-var CAPTURES = "captures";
-var SESSIONS = "sessions";
-function openDb() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(CAPTURES)) {
-        const store = db.createObjectStore(CAPTURES, { keyPath: "key" });
-        store.createIndex("bySession", "sessionId", { unique: false });
-      }
-      if (!db.objectStoreNames.contains(SESSIONS)) {
-        db.createObjectStore(SESSIONS, { keyPath: "sessionId" });
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-function tx(db, store, mode, fn) {
-  return new Promise((resolve, reject) => {
-    const t = db.transaction(store, mode);
-    const req = fn(t.objectStore(store));
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function toRow(sessionId, c) {
-  const bytes = await c.blob.arrayBuffer();
-  return { key: `${sessionId}:${c.meta.index}`, sessionId, meta: c.meta, uploaded: c.uploaded, bytes, mime: c.blob.type || "image/png" };
-}
-function fromRow(row) {
-  return { meta: row.meta, uploaded: row.uploaded, blob: new Blob([row.bytes], { type: row.mime }) };
-}
-var VisualStorage = class {
-  constructor() {
-    this.dbP = openDb();
-  }
-  async saveCapture(sessionId, capture) {
-    const db = await this.dbP;
-    const row = await toRow(sessionId, capture);
-    await tx(db, CAPTURES, "readwrite", (s) => s.put(row));
-  }
-  async markUploaded(sessionId, index) {
-    const db = await this.dbP;
-    const key = `${sessionId}:${index}`;
-    const row = await tx(db, CAPTURES, "readonly", (s) => s.get(key));
-    if (row) {
-      row.uploaded = true;
-      await tx(db, CAPTURES, "readwrite", (s) => s.put(row));
-    }
-  }
-  async listCaptures(sessionId) {
-    const db = await this.dbP;
-    const rows = await tx(db, CAPTURES, "readonly", (s) => s.index("bySession").getAll(sessionId));
-    return rows.sort((a, b) => a.meta.index - b.meta.index).map(fromRow);
-  }
-  async saveSession(state) {
-    const db = await this.dbP;
-    await tx(db, SESSIONS, "readwrite", (s) => s.put(state));
-  }
-  async getSession(sessionId) {
-    const db = await this.dbP;
-    return tx(db, SESSIONS, "readonly", (s) => s.get(sessionId));
-  }
-  async latestSession() {
-    const db = await this.dbP;
-    const all = await tx(db, SESSIONS, "readonly", (s) => s.getAll());
-    return all.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
-  }
-  async clearSession(sessionId) {
-    const db = await this.dbP;
-    const rows = await tx(db, CAPTURES, "readonly", (s) => s.index("bySession").getAll(sessionId));
-    for (const r of rows) await tx(db, CAPTURES, "readwrite", (s) => s.delete(r.key));
-    await tx(db, SESSIONS, "readwrite", (s) => s.delete(sessionId));
-  }
-  /**
-   * Prune every session EXCEPT `keepSessionId`, so IndexedDB doesn't grow
-   * unbounded across runs (each run is ~11 PNGs at DPR 3 = tens of MB). On iOS
-   * Safari an over-quota origin gets its whole storage evicted, so keeping only
-   * the current run's captures is deliberate. (H5)
-   */
-  async pruneOldSessions(keepSessionId) {
-    const db = await this.dbP;
-    const sessions = await tx(db, SESSIONS, "readonly", (s) => s.getAll());
-    for (const s of sessions) {
-      if (s.sessionId !== keepSessionId) await this.clearSession(s.sessionId);
-    }
-  }
-};
-
-// src/uploader.ts
-var NoopUploader = class {
-  async upload(_capture) {
-  }
-  async flush() {
-  }
-};
-var HttpUploader = class {
-  constructor(opts) {
-    this.queue = [];
-    this.active = 0;
-    /** Captures that exhausted their retries; they stay in IDB (uploaded:false). */
-    this.failed = [];
-    // Use the ORIGINAL fetch (captured at construction, before NetworkTracker may
-    // have wrapped it) so uploads don't count as "pending" network and stall the
-    // runner's stabilize() on every subsequent scenario.
-    this.rawFetch = typeof window !== "undefined" ? window.fetch.bind(window) : fetch;
-    this.opts = { concurrency: 2, maxRetries: 3, ...opts };
-  }
-  async upload(capture) {
-    this.queue.push(capture);
-    this.pump();
-  }
-  pump() {
-    while (this.active < this.opts.concurrency && this.queue.length) {
-      const cap = this.queue.shift();
-      this.active++;
-      this.send(cap).then(() => this.opts.onUploaded?.(cap)).catch(() => {
-        this.failed.push(cap);
-      }).finally(() => {
-        this.active--;
-        this.pump();
-      });
-    }
-  }
-  async send(cap, attempt = 1) {
-    try {
-      const form = new FormData();
-      form.append("meta", JSON.stringify(cap.meta));
-      form.append("image", cap.blob, cap.meta.filename);
-      const res = await this.rawFetch(this.opts.endpoint, { method: "POST", headers: this.opts.headers, body: form });
-      if (!res.ok) throw new Error(`upload ${res.status}`);
-    } catch (e) {
-      if (attempt >= this.opts.maxRetries) throw e;
-      await new Promise((r) => setTimeout(r, 500 * attempt));
-      return this.send(cap, attempt + 1);
-    }
-  }
-  async flush(timeoutMs = 3e4) {
-    const deadline = Date.now() + timeoutMs;
-    while ((this.active > 0 || this.queue.length > 0) && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 100));
-    }
-  }
-};
 
 // src/runner.ts
 var VisualTestRunner = class {
   constructor(opts) {
-    this.storage = new VisualStorage();
     this.net = new NetworkTracker();
     this.pauseGate = null;
     this.resumeFn = null;
@@ -372,7 +195,6 @@ var VisualTestRunner = class {
     this.opts = opts;
     this.engine = opts.engine;
     this.nav = opts.navigator;
-    this.uploader = opts.uploader ?? new NoopUploader();
     this.readyTimeout = opts.defaultReadyTimeout ?? 1e4;
     this.quietMs = opts.stabilizeQuietMs ?? 300;
     this.postScrollSettleMs = opts.postScrollSettleMs ?? 400;
@@ -390,14 +212,12 @@ var VisualTestRunner = class {
       startedAt: (/* @__PURE__ */ new Date()).toISOString(),
       captureIndex: 0,
       totalCaptures: countCaptures(this.opts.suite.scenarios),
-      failures: [],
-      uploaded: 0
+      failures: []
     };
   }
   emit(patch) {
     this.state = { ...this.state, ...patch };
     this.opts.onState?.(this.state);
-    void this.storage.saveSession(this.state);
   }
   // ── lifecycle ────────────────────────────────────────────────────────────
   async start() {
@@ -405,8 +225,6 @@ var VisualTestRunner = class {
     this.pauseGate = null;
     this.resumeFn = null;
     this.state = this.freshState();
-    void this.storage.pruneOldSessions(this.state.sessionId).catch(() => {
-    });
     this.net.install();
     enableVisualMode();
     this.emit({ status: "running" });
@@ -416,7 +234,6 @@ var VisualTestRunner = class {
         await this.gate();
         await this.runScenario(scenario);
       }
-      await this.uploader.flush();
       this.emit({ status: this.stopped ? "stopped" : "complete", finishedAt: (/* @__PURE__ */ new Date()).toISOString() });
     } catch (e) {
       this.emit({ status: "error", finishedAt: (/* @__PURE__ */ new Date()).toISOString() });
@@ -508,7 +325,7 @@ var VisualTestRunner = class {
         await delay(action.ms);
         break;
       case "setState":
-        window.dispatchEvent(new CustomEvent("visual-capture:setState", { detail: { name: action.name, payload: action.payload } }));
+        window.dispatchEvent(new CustomEvent("voxissue:setState", { detail: { name: action.name, payload: action.payload } }));
         await this.nav.settle();
         await this.stabilize();
         break;
@@ -548,31 +365,15 @@ var VisualTestRunner = class {
     await this.nav.settle();
     await delay(this.quietMs);
   }
+  /** Signal the shutter — no pixels are produced or stored in the SDK. */
   async captureNow(scenario, checkpointId, label) {
     const index = this.state.captureIndex + 1;
     this.emit({ captureIndex: index, currentCheckpointId: checkpointId });
-    const result = await this.engine.capture({
+    void label;
+    await this.engine.capture({
       scenarioId: scenario.id,
       checkpointId,
       viewportOnly: true
-    });
-    const meta = buildMetadata({
-      sessionId: this.state.sessionId,
-      index,
-      scenario: scenario.id,
-      checkpoint: checkpointId,
-      label,
-      route: this.nav.currentRoute(),
-      engine: this.engine.id,
-      appVersion: this.opts.env?.appVersion,
-      gitCommit: this.opts.env?.gitCommit
-    });
-    const stored = { meta, blob: result.blob, uploaded: false };
-    await this.storage.saveCapture(this.state.sessionId, stored);
-    void this.uploader.upload(stored).then(() => {
-      void this.storage.markUploaded(this.state.sessionId, index);
-      this.emit({ uploaded: this.state.uploaded + 1 });
-    }).catch(() => {
     });
   }
   recordFailure(scenario, checkpoint, err) {
@@ -582,10 +383,6 @@ var VisualTestRunner = class {
         { scenario, checkpoint, message: String(err?.message ?? err).slice(0, 300), timestamp: (/* @__PURE__ */ new Date()).toISOString() }
       ]
     });
-  }
-  // ── export ──────────────────────────────────────────────────────────────────
-  async getStoredCaptures() {
-    return this.storage.listCaptures(this.state.sessionId);
   }
 };
 function countCaptures(scenarios) {
@@ -601,121 +398,6 @@ function newId() {
   return "vc-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-// src/capture/DomCaptureEngine.ts
-import { domToBlob } from "modern-screenshot";
-var REDACT_ATTR = "data-visual-redact";
-var IGNORE_ATTR = "data-visual-ignore";
-var DomCaptureEngine = class {
-  constructor(opts = {}) {
-    this.id = "dom:modern-screenshot";
-    this.opts = opts;
-  }
-  async capture(req) {
-    if (typeof window === "undefined") throw new Error("DomCaptureEngine requires a DOM");
-    const dpr = window.devicePixelRatio || 1;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const target = req.target || document.documentElement;
-    const captureWidth = req.viewportOnly ? vw : target.scrollWidth;
-    const captureHeight = req.viewportOnly ? vh : target.scrollHeight;
-    const blob = await domToBlob(target, {
-      // Capture the viewport box at real DPR (matches the native screenshot).
-      width: captureWidth,
-      height: captureHeight,
-      scale: dpr,
-      backgroundColor: this.opts.backgroundColor ?? "#ffffff",
-      // CRITICAL: pin the cloned root to the real layout width. Without this,
-      // modern-screenshot renders <html> into a foreignObject that reflows to a
-      // content-driven (narrower) width, so text wraps differently than on the
-      // real device - the capture came out as if the viewport were much
-      // narrower. Forcing width/min/max to the live viewport makes the clone lay
-      // out identically to the screen. (When viewport-only we also translate to
-      // the current scroll position.)
-      style: {
-        width: `${captureWidth}px`,
-        minWidth: `${captureWidth}px`,
-        maxWidth: `${captureWidth}px`,
-        // THE FIX for "capture wraps more than the real screen at the same
-        // width": the clone renders inside an SVG image document that has NO
-        // <meta viewport>, so iOS WebKit re-enables text auto-sizing and inflates
-        // px-sized UI text ~20%, forcing extra line-wraps + overlap. On the live
-        // page the computed value is 'auto' (== the default), so modern-screenshot
-        // never carries an opt-out into the clone. Pin it explicitly here; it
-        // inherits to the whole tree. (Both spellings for Safari + spec.)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...{ webkitTextSizeAdjust: "100%", textSizeAdjust: "100%" },
-        ...req.viewportOnly ? { transform: `translate(${-window.scrollX}px, ${-window.scrollY}px)`, transformOrigin: "top left" } : {}
-      },
-      filter: (node) => {
-        if (node instanceof Element && node.hasAttribute(IGNORE_ATTR)) return false;
-        return true;
-      },
-      onCloneNode: (cloned) => {
-        if (cloned instanceof Element) {
-          cloned.querySelectorAll?.(`[${REDACT_ATTR}]`).forEach((el) => {
-            el.style.filter = "blur(8px)";
-            el.setAttribute("aria-hidden", "true");
-          });
-          const doc = cloned.ownerDocument;
-          if (doc && cloned instanceof HTMLElement && !doc.getElementById("vc-text-size-fix")) {
-            const s = doc.createElement("style");
-            s.id = "vc-text-size-fix";
-            s.textContent = "*{-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;}";
-            cloned.prepend(s);
-          }
-        }
-        if (cloned.ownerDocument && this.opts.onClone) this.opts.onClone(cloned.ownerDocument);
-      }
-      // KNOWN LIMITATION (M2): the flattened foreignObject clone has no
-      // scrollport, so on a SCROLLED viewport capture, position:fixed elements
-      // render at their document position (translated off-screen) and
-      // position:sticky headers unstick. Top-of-page captures are faithful
-      // (the spike's 0.09-0.82% numbers). For scrolled sticky/fixed fidelity,
-      // prefer top-anchored checkpoints, or a future native capture engine.
-    });
-    return {
-      blob,
-      width: Math.round(captureWidth * dpr),
-      height: Math.round(captureHeight * dpr)
-    };
-  }
-};
-
-// src/zip.ts
-import JSZip from "jszip";
-async function buildSessionZip(session, captures, layout = "both") {
-  const zip = new JSZip();
-  zip.file(
-    "session.json",
-    JSON.stringify(
-      { session, captures: captures.map((c) => c.meta) },
-      null,
-      2
-    )
-  );
-  const wantFolder = layout === "folder" || layout === "both";
-  const wantCombined = layout === "combined" || layout === "both";
-  for (const c of captures) {
-    if (wantFolder) {
-      zip.file(`${c.meta.scenario}/${c.meta.filename}`, c.blob);
-    }
-    if (wantCombined) {
-      zip.file(`_combined/${c.meta.filename}`, c.blob);
-    }
-  }
-  return zip.generateAsync({ type: "blob" });
-}
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1e3);
-}
-
 // src/manifest.ts
 function defineSuite(suite) {
   return suite;
@@ -724,11 +406,19 @@ function defineScenario(scenario) {
   return scenario;
 }
 
+// src/gate.ts
+function isVisualTestingAllowed(g) {
+  if (g.isDev) return true;
+  if (!g.featureFlag) return false;
+  return g.isStaff === void 0 ? true : g.isStaff === true;
+}
+
 // src/capture/MipCaptureEngine.ts
 function hooks() {
   if (typeof window === "undefined") return null;
   const w = window;
-  return typeof w.mip?.capture === "function" ? w.mip : null;
+  const h = w.vi ?? w.mip;
+  return typeof h?.capture === "function" ? h : null;
 }
 function isMipHost() {
   return hooks() !== null;
@@ -742,7 +432,9 @@ var MipCaptureEngine = class {
   }
   async capture(_req) {
     const mip = hooks();
-    if (!mip) throw new Error("MipCaptureEngine used outside the MIP web view");
+    if (!mip) {
+      return { blob: new Blob([PLACEHOLDER_PNG], { type: "image/png" }), width: 0, height: 0 };
+    }
     mip.capture();
     await new Promise((r) => setTimeout(r, 350));
     return {
@@ -768,18 +460,11 @@ export {
   currentViewport,
   orientation,
   browserPlatform,
-  buildFilename,
-  buildMetadata,
-  VisualStorage,
-  NoopUploader,
-  HttpUploader,
   VisualTestRunner,
-  DomCaptureEngine,
-  buildSessionZip,
-  downloadBlob,
   defineSuite,
   defineScenario,
+  isVisualTestingAllowed,
   isMipHost,
   MipCaptureEngine
 };
-//# sourceMappingURL=chunk-APR47V5W.js.map
+//# sourceMappingURL=chunk-DBLNLZPI.js.map

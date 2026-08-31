@@ -1,29 +1,25 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // The runner: the deliberately-boring, deterministic engine that drives the app
-// through a suite and produces captures. It is framework-agnostic - it changes
-// routes through the injected Navigator and captures through the injected
-// CaptureEngine, so neither vue-router nor modern-screenshot is referenced here.
-// Flow per checkpoint: navigate -> waitForReady -> actions -> stabilize -> capture
-// -> store -> queue upload. A failing scenario is recorded and skipped, not fatal.
+// through a suite and fires the shutter at each checkpoint. The SDK never takes
+// screenshots itself — the CaptureEngine only SIGNALS the VoxIssue iOS app,
+// which snapshots natively. Flow per checkpoint: navigate -> waitForReady ->
+// actions -> stabilize -> signal capture. Failing scenarios are recorded and
+// skipped, not fatal.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type {
   RunnerOptions, VisualScenario, VisualAction, CapturePoint,
-  VisualSessionState, StoredCapture, CaptureEngine, Navigator, Uploader,
+  VisualSessionState, CaptureEngine, Navigator,
 } from './types.js'
 import {
   NetworkTracker, waitForReady, waitForAssets, enableVisualMode, disableVisualMode, delay,
 } from './readiness.js'
-import { performScroll, buildMetadata } from './dom.js'
-import { VisualStorage } from './storage.js'
-import { NoopUploader } from './uploader.js'
+import { performScroll } from './dom.js'
 
 export class VisualTestRunner {
   private opts: RunnerOptions
   private engine: CaptureEngine
   private nav: Navigator
-  private uploader: Uploader
-  private storage = new VisualStorage()
   private net = new NetworkTracker()
 
   private state: VisualSessionState
@@ -39,7 +35,6 @@ export class VisualTestRunner {
     this.opts = opts
     this.engine = opts.engine
     this.nav = opts.navigator
-    this.uploader = opts.uploader ?? new NoopUploader()
     this.readyTimeout = opts.defaultReadyTimeout ?? 10000
     this.quietMs = opts.stabilizeQuietMs ?? 300
     // Extra pause AFTER a scroll, before capturing. A scroll triggers no
@@ -63,14 +58,12 @@ export class VisualTestRunner {
       captureIndex: 0,
       totalCaptures: countCaptures(this.opts.suite.scenarios),
       failures: [],
-      uploaded: 0,
     }
   }
 
   private emit(patch: Partial<VisualSessionState>): void {
     this.state = { ...this.state, ...patch }
     this.opts.onState?.(this.state)
-    void this.storage.saveSession(this.state)
   }
 
   // ── lifecycle ────────────────────────────────────────────────────────────
@@ -82,9 +75,6 @@ export class VisualTestRunner {
     this.pauseGate = null
     this.resumeFn = null
     this.state = this.freshState()
-    // Prune old sessions so IndexedDB doesn't grow unbounded across runs (H5);
-    // best-effort, never blocks the run.
-    void this.storage.pruneOldSessions(this.state.sessionId).catch(() => {})
     this.net.install()
     enableVisualMode()
     this.emit({ status: 'running' })
@@ -95,7 +85,6 @@ export class VisualTestRunner {
         await this.gate()
         await this.runScenario(scenario)
       }
-      await this.uploader.flush()
       this.emit({ status: this.stopped ? 'stopped' : 'complete', finishedAt: new Date().toISOString() })
     } catch (e) {
       this.emit({ status: 'error', finishedAt: new Date().toISOString() })
@@ -185,7 +174,7 @@ export class VisualTestRunner {
       case 'wait':
         await delay(action.ms); break
       case 'setState':
-        window.dispatchEvent(new CustomEvent('visual-capture:setState', { detail: { name: action.name, payload: action.payload } }))
+        window.dispatchEvent(new CustomEvent('voxissue:setState', { detail: { name: action.name, payload: action.payload } }))
         await this.nav.settle(); await this.stabilize(); break
       case 'capture':
         await this.captureNow(scenario, action.id, action.label); break
@@ -221,34 +210,16 @@ export class VisualTestRunner {
     await delay(this.quietMs)
   }
 
+  /** Signal the shutter — no pixels are produced or stored in the SDK. */
   private async captureNow(scenario: VisualScenario, checkpointId: string, label?: string): Promise<void> {
     const index = this.state.captureIndex + 1
     this.emit({ captureIndex: index, currentCheckpointId: checkpointId })
-
-    const result = await this.engine.capture({
+    void label
+    await this.engine.capture({
       scenarioId: scenario.id,
       checkpointId,
       viewportOnly: true,
     })
-    const meta = buildMetadata({
-      sessionId: this.state.sessionId,
-      index,
-      scenario: scenario.id,
-      checkpoint: checkpointId,
-      label,
-      route: this.nav.currentRoute(),
-      engine: this.engine.id,
-      appVersion: this.opts.env?.appVersion,
-      gitCommit: this.opts.env?.gitCommit,
-    })
-    const stored: StoredCapture = { meta, blob: result.blob, uploaded: false }
-    await this.storage.saveCapture(this.state.sessionId, stored)
-
-    // Fire-and-forget upload; never block navigation on the network.
-    void this.uploader.upload(stored).then(() => {
-      void this.storage.markUploaded(this.state.sessionId, index)
-      this.emit({ uploaded: this.state.uploaded + 1 })
-    }).catch(() => { /* retained locally + retried by the uploader */ })
   }
 
   private recordFailure(scenario: string, checkpoint: string | undefined, err: unknown): void {
@@ -260,11 +231,6 @@ export class VisualTestRunner {
     })
   }
 
-  // ── export ──────────────────────────────────────────────────────────────────
-
-  async getStoredCaptures(): Promise<StoredCapture[]> {
-    return this.storage.listCaptures(this.state.sessionId)
-  }
 }
 
 function countCaptures(scenarios: VisualScenario[]): number {

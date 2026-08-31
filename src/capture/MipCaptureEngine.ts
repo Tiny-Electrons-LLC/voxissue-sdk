@@ -1,14 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Native capture via the MIP iOS app. When the app runs inside MIP's capture
-// web view, MIP injects `window.mip` (capture/done hooks) — the phone takes a
-// REAL WKWebView snapshot, pixel-identical to what a user sees, instead of the
-// DOM reconstruction modern-screenshot produces. The runner keeps its whole
-// navigate → waitForReady → actions → stabilize flow; only the shutter changes:
-// this engine tells MIP "now", and MIP imports the shot as a ticket on-device.
+// Native capture via the VoxIssue iOS app. Inside the app's capture web view,
+// `window.vi` (capture/done hooks, `window.mip` legacy alias) is injected —
+// the phone takes a REAL WKWebView snapshot, pixel-identical to what a user
+// sees. The runner keeps its whole navigate → waitForReady → actions →
+// stabilize flow; only the shutter changes: this engine says "now", and the
+// app imports the shot as a ticket on-device.
 //
-// The returned blob is a 1x1 placeholder: the real pixels live in MIP, so
-// storing/zipping them here would be redundant (and this webview's IndexedDB
-// is invisible to the user anyway).
+// The SDK never captures pixels: the returned blob is a 1x1 placeholder, and
+// outside the VoxIssue app capture() is a dry-run no-op.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { CaptureEngine, CaptureRequest, CaptureResult } from '../types.js'
@@ -17,8 +16,9 @@ type MipHooks = { capture(): void; done(): void }
 
 function hooks(): MipHooks | null {
   if (typeof window === 'undefined') return null
-  const w = window as unknown as { mip?: MipHooks }
-  return typeof w.mip?.capture === 'function' ? (w.mip as MipHooks) : null
+  const w = window as unknown as { vi?: MipHooks; mip?: MipHooks }
+  const h = w.vi ?? w.mip
+  return typeof h?.capture === 'function' ? (h as MipHooks) : null
 }
 
 /** True when running inside the MIP capture web view. */
@@ -36,7 +36,11 @@ export class MipCaptureEngine implements CaptureEngine {
 
   async capture(_req: CaptureRequest): Promise<CaptureResult> {
     const mip = hooks()
-    if (!mip) throw new Error('MipCaptureEngine used outside the MIP web view')
+    if (!mip) {
+      // Outside the VoxIssue app there is nothing to shoot — the SDK never
+      // captures pixels itself. Treat the run as a dry-run.
+      return { blob: new Blob([PLACEHOLDER_PNG], { type: 'image/png' }), width: 0, height: 0 }
+    }
     mip.capture()
     // WKWebView snapshots asynchronously on the native side; give it a beat so
     // the next action/navigation doesn't mutate the page mid-shot.

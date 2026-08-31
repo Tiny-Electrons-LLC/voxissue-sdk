@@ -1,135 +1,76 @@
 # @tiny-electrons/voxissue-sdk
 
-The VoxIssue SDK (formerly `visual-capture`): drop it into a web app and the VoxIssue iOS app can auto-capture the app suite-by-suite through native `window.mip` shutter hooks — or run standalone as an in-browser visual regression tool.
+Drives a web app suite-by-suite and signals the [VoxIssue iOS app](https://github.com/Tiny-Electrons-LLC/VoxIssue) when to take screenshots.
 
-Self-driving in-SPA visual capture + regression runner. Runs **inside your app on the real device** (iPhone/iPad/desktop Safari, Chrome), auto-navigates a manifest of routes/states/scroll positions, and captures the rendered DOM to PNG. No native iOS automation required.
+**The SDK never takes screenshots itself.** Capture is native: the VoxIssue app snapshots its WKWebView when the SDK fires the shutter hooks (`window.vi.capture()` / `window.vi.done()`). Outside the VoxIssue app a run is a dry-run — navigation and readiness checks only.
 
-The **capture engine is swappable**: DOM→PNG today (via `modern-screenshot` — validated at 0.09–0.82% pixel diff vs native WebKit), native iOS/Playwright engines later, without touching your manifest or the runner.
+## Install
 
-Used by patchconsole, elevateiq, itfolder.
+```json
+"@tiny-electrons/voxissue-sdk": "git+https://github.com/Tiny-Electrons-LLC/voxissue-sdk.git#v0.3.0"
+```
 
-## Install (private git dependency)
+Private git dependency — CI needs a read token for this repo.
 
-```jsonc
-// package.json
-"dependencies": {
-  "@tiny-electrons/voxissue-sdk": "github:Tiny-Electrons-LLC/VoxIssue#path:/sdk"
+## What it does
+
+- **Suites** (`defineSuite`): declarative scenarios — route, readiness signal, actions, capture checkpoints.
+- **Runner**: navigates the app through each scenario, waits for real readiness (`data-visual-ready`, network quiet, asset settle), and signals the native shutter at each checkpoint.
+- **VoxIssue host detection** (`isMipHost()`): inside the app's capture web view the run auto-starts once per capture session, headless, and signals `done()` at the end so the app advances.
+- **Gate** (`isVisualTestingAllowed`): dev/staging/staff-only exposure so the tool never reaches customers.
+
+## Vue
+
+```js
+import { createVisualTesting, isVisualTestingAllowed, useVisualReady } from '@tiny-electrons/voxissue-sdk/vue'
+
+const controller = createVisualTesting({ router, suites })
+```
+
+Pages signal readiness by binding the marker to their loading state:
+
+```html
+<div :data-visual-ready="loading ? null : 'devices-page'">
+```
+
+## React
+
+```jsx
+import { createVisualTesting, useVisualReady } from '@tiny-electrons/voxissue-sdk/react'
+
+const controller = createVisualTesting({
+  navigate: (route) => router.navigate(route),   // e.g. react-router
+  suites,
+})
+
+function DevicesPage({ loading }) {
+  const readyRef = useVisualReady('devices-page', !loading)
+  return <div ref={readyRef}>…</div>
 }
 ```
 
-Pin a **tag** so `npm ci` resolves over HTTPS with only the default same-org
-token — no cross-repo SSH key and no build step in CI. `dist/` is **committed**
-to this repo for exactly that reason (CI cannot run a `prepare`/build over SSH
-from a private sibling repo). The tradeoff: each release must be built before
-tagging — see [Releasing](#releasing).
+## Suites
 
-## Architecture
-
-```
-        Test Manifest (yours)
-                │
-                ▼
-        VisualTestRunner  ── framework-agnostic core, zero Vue
-        ┌───────┴────────┐
-   Navigator          CaptureEngine
- (RouterNavigator)   (DomCaptureEngine → modern-screenshot)
-```
-
-Only `@tiny-electrons/voxissue-sdk/vue` imports Vue. The core (`@tiny-electrons/voxissue-sdk`) is framework-agnostic.
-
-## Wire it up (Vue)
-
-```ts
+```js
 import { defineSuite } from '@tiny-electrons/voxissue-sdk'
-import { createVisualTesting, isVisualTestingAllowed, VisualTestPanel } from '@tiny-electrons/voxissue-sdk/vue'
-import router from '@/router'
 
-// 1. Manifest — stable data-visual-id / data-visual-ready attrs, not button text
 export const mobileSuite = defineSuite({
   id: 'mobile-full',
   name: 'Full Mobile UI',
   scenarios: [
     {
-      id: 'devices', name: 'Inventory · Devices', route: '/devices',
+      id: 'devices',
+      name: 'Devices',
+      route: '/devices',
       waitFor: 'devices-page',
       captures: [
         { id: 'top', scroll: 'top' },
-        { id: 'table', scrollTo: "[data-visual-id='device-row-20']" },
+        { id: 'middle', scrollPercent: 0.5 },
         { id: 'bottom', scroll: 'bottom' },
       ],
     },
   ],
 })
-
-// 2. Controller (dev-gated)
-const allowed = isVisualTestingAllowed({
-  isDev: import.meta.env.DEV,
-  featureFlag: import.meta.env.VITE_VISUAL_TESTING === 'true',
-  isPrivileged: auth.isOwner.value,
-})
-
-const controller = createVisualTesting({
-  router,
-  suites: [mobileSuite],
-  env: { appVersion: import.meta.env.VITE_APP_VERSION, gitCommit: import.meta.env.VITE_GIT_COMMIT },
-})
 ```
 
-```vue
-<!-- Settings → Developer → Visual Testing -->
-<VisualTestPanel v-if="allowed" :controller="controller" />
-```
-
-## Signal readiness from your pages
-
-Instead of arbitrary sleeps, tell the runner when a page is actually ready:
-
-```ts
-import { useVisualReady } from '@tiny-electrons/voxissue-sdk/vue'
-
-const { readyEl, markReady } = useVisualReady('devices-page')
-// <div ref="readyEl"> ... </div>
-onDataLoaded(() => markReady())
-```
-
-The runner waits for: the `data-visual-ready` signal → tracked network quiet → fonts/images → framework settle → a short quiet period. Animations are frozen while capturing.
-
-## Redaction & ignore
-
-- `data-visual-redact` — blurred before pixels are produced (passwords, secrets).
-- `data-visual-ignore` — dropped from the capture (volatile timestamps, live counters) so diffs don't churn.
-
-## Output
-
-Each run persists to IndexedDB (survives a Safari reload) and exports a ZIP:
-
-```
-visual-capture-2026-08-30/
-  session.json
-  devices/
-    001_devices_top_390x844.png
-    002_devices_table_390x844.png
-    003_devices_bottom_390x844.png
-```
-
-Every PNG has a metadata record (route, checkpoint, viewport, DPR, browser, platform, engine, appVersion, gitCommit, timestamp).
-
-## Releasing
-
-`dist/` is checked in, so a release is build → commit → tag → push:
-
-```bash
-npm run release:build   # test + tsup (regenerates dist/)
-git add -A && git commit -m "release: vX.Y.Z"
-git tag vX.Y.Z && git push && git push --tags
-```
-
-Then bump each consumer's dep to `#vX.Y.Z` and `npm install` to refresh its
-lockfile. **Never** point a consumer at a branch or an un-pushed commit SHA — it
-404s for CI and every other machine.
-
-## Roadmap
-
-- **MVP (now):** manifest, navigate/waitForReady/click/scrollTo/capture, DOM→PNG, IndexedDB, ZIP, dev panel.
-- **Phase 2:** server upload (`HttpUploader`), baseline diffing, ignore-regions, resume.
-- **Phase 3:** native iOS capture engine (same manifest/runner, swap only the engine).
+A scenario whose ready signal never fires is still captured after a soft timeout, so an empty tenant can't blank a run.

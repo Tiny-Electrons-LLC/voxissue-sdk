@@ -69,6 +69,8 @@ export interface CreateVisualTestingOptions {
   defaultReadyTimeout?: number
   stabilizeQuietMs?: number
   postScrollSettleMs?: number
+  /** Auto-start the run when created inside the MIP capture web view (default true). */
+  autoStartInMip?: boolean
 }
 
 export interface VisualTestingController {
@@ -111,6 +113,12 @@ export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTes
       postScrollSettleMs: opts.postScrollSettleMs,
       onState: (s) => { state.value = s },
     })
+  }
+
+  // MIP host: the whole run is unattended — start as soon as the controller
+  // exists (the app decides when that is, e.g. once auth/allowlist resolves).
+  if ((opts.autoStartInMip ?? true) && isMipHost()) {
+    setTimeout(() => { void start() }, 800)
   }
 
   async function start(): Promise<void> {

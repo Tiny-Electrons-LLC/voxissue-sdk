@@ -6,6 +6,7 @@
 
 import { defineComponent, h, computed, onMounted, type PropType } from 'vue'
 import type { VisualTestingController } from './index.js'
+import { isMipHost } from '../capture/MipCaptureEngine.js'
 
 const STYLE_ID = 'vc-panel-style'
 const CSS = `
@@ -56,6 +57,11 @@ export default defineComponent({
     // Also treat 'error' as done so Download ZIP stays available - the partial
     // captures are the most useful debugging artifact.
     const isComplete = computed(() => status.value === 'complete' || status.value === 'stopped' || status.value === 'error')
+
+    // Inside the MIP capture web view the run is fully automatic (auto-start,
+    // native shutter, auto-done) — rendering the panel would only end up in
+    // the screenshots. Headless: render nothing.
+    if (isMipHost()) return () => null
 
     return () => {
       const children = [

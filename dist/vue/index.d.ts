@@ -16,11 +16,11 @@ declare const _default: vue.DefineComponent<vue.ExtractPropTypes<{
         type: PropType<VisualTestingController>;
         required: true;
     };
-}>, () => vue.VNode<vue.RendererNode, vue.RendererElement, {
+}>, (() => null) | (() => vue.VNode<vue.RendererNode, vue.RendererElement, {
     [key: string]: any;
 }> | vue.VNode<vue.RendererNode, vue.RendererElement, {
     [key: string]: any;
-}>[], {}, {}, {}, vue.ComponentOptionsMixin, vue.ComponentOptionsMixin, {}, string, vue.PublicProps, Readonly<vue.ExtractPropTypes<{
+}>[]), {}, {}, {}, vue.ComponentOptionsMixin, vue.ComponentOptionsMixin, {}, string, vue.PublicProps, Readonly<vue.ExtractPropTypes<{
     controller: {
         type: PropType<VisualTestingController>;
         required: true;
@@ -65,6 +65,8 @@ interface CreateVisualTestingOptions {
     defaultReadyTimeout?: number;
     stabilizeQuietMs?: number;
     postScrollSettleMs?: number;
+    /** Auto-start the run when created inside the MIP capture web view (default true). */
+    autoStartInMip?: boolean;
 }
 interface VisualTestingController {
     suites: VisualSuite[];

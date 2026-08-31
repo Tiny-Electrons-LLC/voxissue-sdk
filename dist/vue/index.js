@@ -74,6 +74,7 @@ var VisualTestPanel_default = defineComponent({
     const isRunning = computed(() => status.value === "running");
     const isPaused = computed(() => status.value === "paused");
     const isComplete = computed(() => status.value === "complete" || status.value === "stopped" || status.value === "error");
+    if (isMipHost()) return () => null;
     return () => {
       const children = [
         h("h3", "Visual Testing"),
@@ -174,6 +175,11 @@ function createVisualTesting(opts) {
         state.value = s;
       }
     });
+  }
+  if ((opts.autoStartInMip ?? true) && isMipHost()) {
+    setTimeout(() => {
+      void start();
+    }, 800);
   }
   async function start() {
     if (running.value) return;

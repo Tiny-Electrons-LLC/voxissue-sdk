@@ -1,4 +1,6 @@
-# @tiny-electrons/visual-capture
+# @tiny-electrons/voxissue-sdk
+
+The VoxIssue SDK (formerly `visual-capture`): drop it into a web app and the VoxIssue iOS app can auto-capture the app suite-by-suite through native `window.mip` shutter hooks — or run standalone as an in-browser visual regression tool.
 
 Self-driving in-SPA visual capture + regression runner. Runs **inside your app on the real device** (iPhone/iPad/desktop Safari, Chrome), auto-navigates a manifest of routes/states/scroll positions, and captures the rendered DOM to PNG. No native iOS automation required.
 
@@ -11,7 +13,7 @@ Used by patchconsole, elevateiq, itfolder.
 ```jsonc
 // package.json
 "dependencies": {
-  "@tiny-electrons/visual-capture": "github:Tiny-Electrons-LLC/visual-capture#v0.1.2"
+  "@tiny-electrons/voxissue-sdk": "github:Tiny-Electrons-LLC/VoxIssue#path:/sdk"
 }
 ```
 
@@ -33,13 +35,13 @@ tagging — see [Releasing](#releasing).
  (RouterNavigator)   (DomCaptureEngine → modern-screenshot)
 ```
 
-Only `@tiny-electrons/visual-capture/vue` imports Vue. The core (`@tiny-electrons/visual-capture`) is framework-agnostic.
+Only `@tiny-electrons/voxissue-sdk/vue` imports Vue. The core (`@tiny-electrons/voxissue-sdk`) is framework-agnostic.
 
 ## Wire it up (Vue)
 
 ```ts
-import { defineSuite } from '@tiny-electrons/visual-capture'
-import { createVisualTesting, isVisualTestingAllowed, VisualTestPanel } from '@tiny-electrons/visual-capture/vue'
+import { defineSuite } from '@tiny-electrons/voxissue-sdk'
+import { createVisualTesting, isVisualTestingAllowed, VisualTestPanel } from '@tiny-electrons/voxissue-sdk/vue'
 import router from '@/router'
 
 // 1. Manifest — stable data-visual-id / data-visual-ready attrs, not button text
@@ -83,7 +85,7 @@ const controller = createVisualTesting({
 Instead of arbitrary sleeps, tell the runner when a page is actually ready:
 
 ```ts
-import { useVisualReady } from '@tiny-electrons/visual-capture/vue'
+import { useVisualReady } from '@tiny-electrons/voxissue-sdk/vue'
 
 const { readyEl, markReady } = useVisualReady('devices-page')
 // <div ref="readyEl"> ... </div>

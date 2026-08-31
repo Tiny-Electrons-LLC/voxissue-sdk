@@ -1,14 +1,15 @@
 {
-  "name": "@tiny-electrons/visual-capture",
-  "version": "0.1.8",
-  "description": "Self-driving in-SPA visual capture + regression runner. Framework-agnostic core with a swappable capture engine and a thin Vue adapter. Runs on the real device (iPhone/iPad/desktop Safari, Chrome) and captures the rendered DOM to PNG.",
+  "name": "@tiny-electrons/voxissue-sdk",
+  "version": "0.2.0",
+  "description": "VoxIssue SDK: self-driving in-SPA visual capture + regression runner, with native shutter hooks for the VoxIssue iOS app. Framework-agnostic core, swappable capture engine, thin Vue adapter.",
   "type": "module",
   "license": "UNLICENSED",
   "private": true,
   "author": "Tiny Electrons LLC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tiny-Electrons-LLC/visual-capture.git"
+    "url": "https://github.com/Tiny-Electrons-LLC/VoxIssue.git",
+    "directory": "sdk"
   },
   "sideEffects": false,
   "files": [

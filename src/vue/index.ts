@@ -1,4 +1,4 @@
-// @tiny-electrons/visual-capture/vue — Vue 3 adapter.
+// @tiny-electrons/voxissue-sdk/vue — Vue 3 adapter.
 // Wires the framework-agnostic runner to a Vue app: a router-based Navigator, a
 // gating helper for dev/staging/owner-only exposure, a reactive controller for
 // the dev panel, and a `useVisualReady` composable for app pages to signal

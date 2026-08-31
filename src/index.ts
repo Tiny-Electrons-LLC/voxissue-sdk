@@ -1,5 +1,5 @@
-// @tiny-electrons/visual-capture — framework-agnostic core.
-// The Vue adapter is a separate entry: import from '@tiny-electrons/visual-capture/vue'.
+// @tiny-electrons/voxissue-sdk — framework-agnostic core.
+// The Vue adapter is a separate entry: import from '@tiny-electrons/voxissue-sdk/vue'.
 
 export * from './types.js'
 export { VisualTestRunner } from './runner.js'

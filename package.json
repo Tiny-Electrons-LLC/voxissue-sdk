@@ -4,12 +4,15 @@
   "description": "VoxIssue SDK: drives a web app suite-by-suite and signals the VoxIssue iOS app when to take native screenshots. The SDK itself never captures pixels. Framework-agnostic core with Vue and React adapters.",
   "type": "module",
   "license": "UNLICENSED",
-  "private": true,
+  "private": false,
   "author": "Tiny Electrons LLC",
+  "homepage": "https://voxissue.com/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Tiny-Electrons-LLC/VoxIssue.git",
-    "directory": "sdk"
+    "url": "https://github.com/Tiny-Electrons-LLC/voxissue-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Tiny-Electrons-LLC/voxissue-sdk/issues"
   },
   "sideEffects": false,
   "files": [

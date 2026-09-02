@@ -1,6 +1,6 @@
 # @tiny-electrons/voxissue-sdk
 
-Drives a web app suite-by-suite and signals the [VoxIssue iOS app](https://github.com/Tiny-Electrons-LLC/VoxIssue) when to take screenshots.
+Drives a web app suite-by-suite and signals the [VoxIssue iOS app](https://voxissue.com/) when to take screenshots.
 
 **The SDK never takes screenshots itself.** Capture is native: the VoxIssue app snapshots its WKWebView when the SDK fires the shutter hooks (`window.vi.capture()` / `window.vi.done()`). Outside the VoxIssue app a run is a dry-run — navigation and readiness checks only.
 
@@ -10,7 +10,7 @@ Drives a web app suite-by-suite and signals the [VoxIssue iOS app](https://githu
 "@tiny-electrons/voxissue-sdk": "git+https://github.com/Tiny-Electrons-LLC/voxissue-sdk.git#v0.3.0"
 ```
 
-Private git dependency — CI needs a read token for this repo.
+Public git dependency — installs from the public [voxissue-sdk](https://github.com/Tiny-Electrons-LLC/voxissue-sdk) repo, no token required. Learn more at [voxissue.com](https://voxissue.com/).
 
 ## What it does
 

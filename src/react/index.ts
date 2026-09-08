@@ -9,7 +9,7 @@ import { VisualTestRunner } from '../index.js'
 import type {
   VisualSuite, VisualSessionState, RunnerOptions, CaptureEngine, Navigator,
 } from '../types.js'
-import { MipCaptureEngine, isMipHost } from '../capture/MipCaptureEngine.js'
+import { MipCaptureEngine, isMipHost, listenToHostControls } from '../capture/MipCaptureEngine.js'
 export { isVisualTestingAllowed } from '../gate.js'
 export type { VisualGateInput } from '../gate.js'
 
@@ -100,6 +100,14 @@ export function createVisualTesting(opts: CreateVisualTestingReactOptions): Visu
       setTimeout(() => { void start() }, 800)
     }
   }
+
+  // VoxIssue host: the native Pause / Resume / Stop reach this controller as
+  // window events. Lives as long as the app does; no-op outside a host.
+  listenToHostControls({
+    pause: () => runner?.pause(),
+    resume: () => runner?.resume(),
+    stop: () => runner?.stop(),
+  })
 
   return {
     suites: opts.suites,

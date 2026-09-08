@@ -1,7 +1,7 @@
 import * as react from 'react';
 import { c as VisualSuite, d as CaptureEngine, R as RunnerOptions, V as VisualSessionState, i as Navigator } from '../gate-DxqC1h9r.js';
 export { o as VisualGateInput, q as isVisualTestingAllowed } from '../gate-DxqC1h9r.js';
-export { M as MipCaptureEngine, i as isMipHost } from '../MipCaptureEngine-ttRmz0EH.js';
+export { M as MipCaptureEngine, i as isMipHost } from '../MipCaptureEngine-CLmsAN9m.js';
 
 /** Navigator over any router: pass the app's navigate + current-path readers. */
 declare class FunctionNavigator implements Navigator {

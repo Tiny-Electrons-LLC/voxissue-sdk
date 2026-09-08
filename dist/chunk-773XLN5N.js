@@ -423,6 +423,21 @@ function hooks() {
 function isMipHost() {
   return hooks() !== null;
 }
+function listenToHostControls(controls) {
+  if (typeof window === "undefined" || !isMipHost()) return () => {
+  };
+  const onPause = () => controls.pause();
+  const onResume = () => controls.resume();
+  const onStop = () => controls.stop();
+  window.addEventListener("vi:pause", onPause);
+  window.addEventListener("vi:resume", onResume);
+  window.addEventListener("vi:stop", onStop);
+  return () => {
+    window.removeEventListener("vi:pause", onPause);
+    window.removeEventListener("vi:resume", onResume);
+    window.removeEventListener("vi:stop", onStop);
+  };
+}
 var PLACEHOLDER_PNG = Uint8Array.from(atob(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
 ), (c) => c.charCodeAt(0));
@@ -465,6 +480,7 @@ export {
   defineScenario,
   isVisualTestingAllowed,
   isMipHost,
+  listenToHostControls,
   MipCaptureEngine
 };
-//# sourceMappingURL=chunk-DBLNLZPI.js.map
+//# sourceMappingURL=chunk-773XLN5N.js.map

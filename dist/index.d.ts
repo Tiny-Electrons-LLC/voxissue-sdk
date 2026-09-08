@@ -1,6 +1,6 @@
 import { R as RunnerOptions, V as VisualSessionState, a as Viewport, b as VisualScenario, c as VisualSuite } from './gate-DxqC1h9r.js';
 export { C as CaptureAction, d as CaptureEngine, e as CapturePoint, f as CaptureRequest, g as CaptureResult, h as ClickAction, N as NavigateAction, i as Navigator, S as ScrollAction, j as Selector, k as SessionFailure, l as SessionStatus, m as SetStateAction, n as VisualAction, o as VisualGateInput, W as WaitAction, p as WaitReadyAction, q as isVisualTestingAllowed } from './gate-DxqC1h9r.js';
-export { M as MipCaptureEngine, i as isMipHost } from './MipCaptureEngine-ttRmz0EH.js';
+export { H as HostControls, M as MipCaptureEngine, i as isMipHost, l as listenToHostControls } from './MipCaptureEngine-CLmsAN9m.js';
 
 declare class VisualTestRunner {
     private opts;

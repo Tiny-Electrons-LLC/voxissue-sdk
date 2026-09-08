@@ -26,6 +26,34 @@ export function isMipHost(): boolean {
   return hooks() !== null
 }
 
+export type HostControls = { pause(): void; resume(): void; stop(): void }
+
+/**
+ * Host → runner controls. Inside a VoxIssue host (the app's web view, or the
+ * browser relay extension's bridge) the person driving the run has Pause /
+ * Resume / Stop buttons on the native side; the host fires these as window
+ * events and the controller obeys, so a paused run really stops scrolling
+ * and navigating instead of only skipping shots.
+ *
+ *   window.dispatchEvent(new CustomEvent('vi:pause'))   // 'vi:resume', 'vi:stop'
+ *
+ * Returns a function that removes the listeners. No-op outside a host.
+ */
+export function listenToHostControls(controls: HostControls): () => void {
+  if (typeof window === 'undefined' || !isMipHost()) return () => {}
+  const onPause = () => controls.pause()
+  const onResume = () => controls.resume()
+  const onStop = () => controls.stop()
+  window.addEventListener('vi:pause', onPause)
+  window.addEventListener('vi:resume', onResume)
+  window.addEventListener('vi:stop', onStop)
+  return () => {
+    window.removeEventListener('vi:pause', onPause)
+    window.removeEventListener('vi:resume', onResume)
+    window.removeEventListener('vi:stop', onStop)
+  }
+}
+
 // Smallest valid transparent PNG (1x1) — placeholder for the stored record.
 const PLACEHOLDER_PNG = Uint8Array.from(atob(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='

@@ -2,8 +2,9 @@ import {
   MipCaptureEngine,
   VisualTestRunner,
   isMipHost,
-  isVisualTestingAllowed
-} from "../chunk-DBLNLZPI.js";
+  isVisualTestingAllowed,
+  listenToHostControls
+} from "../chunk-773XLN5N.js";
 
 // src/vue/index.ts
 import { ref, shallowRef, readonly, onMounted, onBeforeUnmount } from "vue";
@@ -92,6 +93,7 @@ function createVisualTesting(opts) {
   function stop() {
     runner?.stop();
   }
+  listenToHostControls({ pause, resume, stop });
   return { suites, selectedSuiteId, state: readonly(state), running: readonly(running), start, pause, resume, stop };
 }
 function useVisualReady(id, autoOnMount = false) {

@@ -1,6 +1,6 @@
 {
   "name": "@tiny-electrons/voxissue-sdk",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "VoxIssue SDK: drives a web app suite-by-suite and signals the VoxIssue iOS app when to take native screenshots. The SDK itself never captures pixels. Framework-agnostic core with Vue and React adapters.",
   "type": "module",
   "license": "UNLICENSED",

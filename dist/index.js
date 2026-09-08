@@ -12,10 +12,11 @@ import {
   enableVisualMode,
   isMipHost,
   isVisualTestingAllowed,
+  listenToHostControls,
   orientation,
   waitForAssets,
   waitForReady
-} from "./chunk-DBLNLZPI.js";
+} from "./chunk-773XLN5N.js";
 export {
   MipCaptureEngine,
   NetworkTracker,
@@ -30,6 +31,7 @@ export {
   enableVisualMode,
   isMipHost,
   isVisualTestingAllowed,
+  listenToHostControls,
   orientation,
   waitForAssets,
   waitForReady

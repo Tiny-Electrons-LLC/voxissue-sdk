@@ -2,8 +2,9 @@ import {
   MipCaptureEngine,
   VisualTestRunner,
   isMipHost,
-  isVisualTestingAllowed
-} from "../chunk-DBLNLZPI.js";
+  isVisualTestingAllowed,
+  listenToHostControls
+} from "../chunk-773XLN5N.js";
 
 // src/react/index.ts
 import { useEffect, useRef, useState } from "react";
@@ -78,6 +79,11 @@ function createVisualTesting(opts) {
       }, 800);
     }
   }
+  listenToHostControls({
+    pause: () => runner?.pause(),
+    resume: () => runner?.resume(),
+    stop: () => runner?.stop()
+  });
   return {
     suites: opts.suites,
     selectSuite: (id) => {

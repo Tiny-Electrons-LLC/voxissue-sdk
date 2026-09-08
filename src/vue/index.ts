@@ -14,7 +14,7 @@ import type {
   VisualSuite, VisualSessionState, RunnerOptions, CaptureEngine,
 } from '../types.js'
 import { RouterNavigator } from './RouterNavigator.js'
-import { MipCaptureEngine, isMipHost } from '../capture/MipCaptureEngine.js'
+import { MipCaptureEngine, isMipHost, listenToHostControls } from '../capture/MipCaptureEngine.js'
 
 export { RouterNavigator }
 
@@ -109,6 +109,10 @@ export function createVisualTesting(opts: CreateVisualTestingOptions): VisualTes
   function pause(): void { runner?.pause() }
   function resume(): void { runner?.resume() }
   function stop(): void { runner?.stop() }
+
+  // VoxIssue host: the native Pause / Resume / Stop reach this controller as
+  // window events. Lives as long as the app does; no-op outside a host.
+  listenToHostControls({ pause, resume, stop })
 
   return { suites, selectedSuiteId, state: readonly(state) as Readonly<Ref<VisualSessionState | null>>, running: readonly(running), start, pause, resume, stop }
 }
